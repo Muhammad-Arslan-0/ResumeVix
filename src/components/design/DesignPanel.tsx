@@ -16,15 +16,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import {
+  AlignCenter,
+  AlignLeft,
   BookOpen,
   Briefcase,
   Check,
+  ChevronDown,
+  ChevronUp,
   Eye,
   EyeOff,
   FileSpreadsheet,
   FolderGit2,
   GraduationCap,
   Layers,
+  Link2,
   Plus,
   Scissors,
   Sparkles,
@@ -108,6 +113,7 @@ export const DesignPanel: React.FC = () => {
 
   const [activeNav, setActiveNav] = useState<CustomizeSection>('document');
   const [category, setCategory] = useState<TemplateCategory | 'all'>('all');
+  const [headerAdvancedOpen, setHeaderAdvancedOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -685,26 +691,268 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'header' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-            <h3 className="font-semibold text-sm">Header Layout</h3>
-            <select
-              value={template.style.headerStyleOverride || 'auto'}
-              onChange={(e) =>
-                updateStyleConfig({
-                  headerStyleOverride: e.target.value as NonNullable<
-                    typeof template.style.headerStyleOverride
-                  >,
-                })
-              }
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
-            >
-              <option value="auto">Template Default</option>
-              <option value="icon-centered">Centered with Contact Icons</option>
-              <option value="centered">Centered Classic</option>
-              <option value="left">Left Aligned</option>
-              <option value="split">Split (Name Left, Contact Right)</option>
-              <option value="banner">Full-Width Accent Banner</option>
-            </select>
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
+            <h3 className="font-semibold text-sm">Header</h3>
+
+            {/* Text Alignment */}
+            <div className="space-y-2">
+              <div className="font-semibold">Text Alignment</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'left', label: 'Left', Icon: AlignLeft },
+                    { id: 'center', label: 'Center', Icon: AlignCenter },
+                  ] as const
+                ).map((opt) => {
+                  const active = (template.style.headerConfig?.textAlign || 'center') === opt.id;
+                  const Icon = opt.Icon;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          headerConfig: { ...template.style.headerConfig, textAlign: opt.id },
+                        })
+                      }
+                      className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Details Arrangement */}
+            <div className="space-y-2">
+              <div className="font-semibold">Details Arrangement</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'inline', label: 'Inline Wrap' },
+                    { id: 'grid', label: 'Grid' },
+                  ] as const
+                ).map((opt) => {
+                  const active = (template.style.headerConfig?.detailsLayout || 'inline') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          headerConfig: { ...template.style.headerConfig, detailsLayout: opt.id },
+                        })
+                      }
+                      className={`py-2 px-3 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {(
+                  [
+                    { id: 'icon', label: 'Icon' },
+                    { id: 'bullet', label: '• Bullet' },
+                    { id: 'bar', label: '| Bar' },
+                  ] as const
+                ).map((sep) => {
+                  const active =
+                    (template.style.headerConfig?.detailsSeparator || 'icon') === sep.id;
+                  return (
+                    <button
+                      key={sep.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          headerConfig: { ...template.style.headerConfig, detailsSeparator: sep.id },
+                        })
+                      }
+                      className={`py-2 px-2 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {sep.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Icon Style */}
+            {(template.style.headerConfig?.detailsSeparator || 'icon') === 'icon' && (
+              <div className="space-y-2">
+                <div className="font-semibold">Icon Style</div>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      { id: 'plain', cls: '' },
+                      { id: 'filled-circle', cls: 'rounded-full bg-slate-500 text-white' },
+                      { id: 'filled-rounded', cls: 'rounded-[4px] bg-slate-500 text-white' },
+                      { id: 'filled-square', cls: 'rounded-none bg-slate-500 text-white' },
+                      { id: 'outline-circle', cls: 'rounded-full border border-slate-500' },
+                      { id: 'outline-rounded', cls: 'rounded-[4px] border border-slate-500' },
+                      { id: 'outline-square', cls: 'rounded-none border border-slate-500' },
+                    ] as const
+                  ).map((st) => {
+                    const active =
+                      (template.style.headerConfig?.iconStyle || 'outline-circle') === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() =>
+                          updateStyleConfig({
+                            headerConfig: { ...template.style.headerConfig, iconStyle: st.id },
+                          })
+                        }
+                        title={st.id}
+                        className={`p-1.5 rounded-lg border transition ${
+                          active
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40'
+                            : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span className={`w-5 h-5 flex items-center justify-center ${st.cls}`}>
+                          <Link2 className="w-3 h-3" />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Collapsible Advanced Settings */}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setHeaderAdvancedOpen((v) => !v)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between font-medium text-slate-700 dark:text-slate-200"
+              >
+                <span>Advanced Settings</span>
+                {headerAdvancedOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              {headerAdvancedOpen && (
+                <div className="p-3.5 pt-1 space-y-3 border-t border-slate-200 dark:border-slate-800">
+                  <div>
+                    <div className="font-semibold mb-1.5">Name Style</div>
+                    <div className="flex gap-2">
+                      {[false, true].map((isBold) => {
+                        const active = (template.style.headerConfig?.nameBold ?? true) === isBold;
+                        return (
+                          <button
+                            key={String(isBold)}
+                            type="button"
+                            onClick={() =>
+                              updateStyleConfig({
+                                headerConfig: { ...template.style.headerConfig, nameBold: isBold },
+                              })
+                            }
+                            className={`px-3 py-1.5 rounded-lg border ${
+                              isBold ? 'font-bold' : 'font-normal'
+                            } ${
+                              active
+                                ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
+                                : 'border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            Aa
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold mb-1.5">Professional Title Style</div>
+                    <div className="flex gap-2">
+                      {[false, true].map((isItalic) => {
+                        const active =
+                          (template.style.headerConfig?.titleItalic ?? true) === isItalic;
+                        return (
+                          <button
+                            key={String(isItalic)}
+                            type="button"
+                            onClick={() =>
+                              updateStyleConfig({
+                                headerConfig: {
+                                  ...template.style.headerConfig,
+                                  titleItalic: isItalic,
+                                },
+                              })
+                            }
+                            className={`px-3 py-1.5 rounded-lg border ${
+                              isItalic ? 'italic' : 'not-italic'
+                            } ${
+                              active
+                                ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
+                                : 'border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            Aa
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold mb-1.5">Professional Title Position</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(
+                        [
+                          { id: 'same-line', label: 'Try Same Line' },
+                          { id: 'below', label: 'Below' },
+                        ] as const
+                      ).map((pos) => {
+                        const active =
+                          (template.style.headerConfig?.titlePosition || 'below') === pos.id;
+                        return (
+                          <button
+                            key={pos.id}
+                            type="button"
+                            onClick={() =>
+                              updateStyleConfig({
+                                headerConfig: {
+                                  ...template.style.headerConfig,
+                                  titlePosition: pos.id,
+                                },
+                              })
+                            }
+                            className={`py-1.5 px-2.5 rounded-lg border ${
+                              active
+                                ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-medium'
+                                : 'border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {pos.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

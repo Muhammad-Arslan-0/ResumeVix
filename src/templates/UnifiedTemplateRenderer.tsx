@@ -43,12 +43,23 @@ function ContactLine({ data, centered = false }: { data: ResumeData; centered?: 
 function TemplateHeader({
   data,
   headerStyle,
+  headerConfig,
 }: {
   data: ResumeData;
   headerStyle: NonNullable<TemplateDefinition['headerStyle']>;
+  headerConfig?: TemplateConfig['style']['headerConfig'];
 }) {
   const headingStyle = { fontFamily: 'var(--rv-font-heading)' };
   const { profile } = data;
+  const hc = headerConfig || {};
+  const isCentered =
+    hc.textAlign ? hc.textAlign === 'center' : headerStyle === 'icon-centered' || headerStyle === 'centered';
+  const nameBold = hc.nameBold ?? true;
+  const titleItalic = hc.titleItalic ?? true;
+  const titleSameLine = hc.titlePosition === 'same-line';
+  const separator = hc.detailsSeparator || (headerStyle === 'icon-centered' ? 'icon' : 'bullet');
+  const iconStyle = hc.iconStyle || 'outline-circle';
+  const detailsGrid = hc.detailsLayout === 'grid';
 
   if (headerStyle === 'banner') {
     return (
@@ -73,7 +84,7 @@ function TemplateHeader({
     );
   }
 
-  if (headerStyle === 'icon-centered') {
+  if (headerStyle === 'icon-centered' || hc.textAlign || hc.detailsSeparator || hc.iconStyle) {
     const contactChips = [
       profile.email ? { icon: Mail, text: profile.email } : null,
       profile.phone ? { icon: Phone, text: profile.phone } : null,
@@ -84,34 +95,80 @@ function TemplateHeader({
       profile.orcid ? { icon: Globe, text: `ORCID: ${profile.orcid}` } : null,
     ].filter(Boolean) as Array<{ icon: React.ComponentType<{ className?: string }>; text: string }>;
 
-    return (
-      <header className="text-center pb-3 mb-3">
-        <h1
-          style={{ ...headingStyle, color: 'var(--rv-name-color)' }}
-          className="text-[2em] font-bold tracking-tight"
+    const renderIconBadge = (Icon: React.ComponentType<{ className?: string }>) => {
+      if (iconStyle === 'plain') {
+        return <Icon className="w-3 h-3 shrink-0" />;
+      }
+      const isFilled = iconStyle.startsWith('filled-');
+      const shape = iconStyle.endsWith('-circle')
+        ? 'rounded-full'
+        : iconStyle.endsWith('-rounded')
+          ? 'rounded-[4px]'
+          : 'rounded-none';
+      return (
+        <span
+          style={
+            isFilled
+              ? { backgroundColor: 'var(--rv-icon-color)', color: '#ffffff' }
+              : { borderColor: 'var(--rv-icon-color)', color: 'var(--rv-icon-color)' }
+          }
+          className={`w-4 h-4 ${shape} ${isFilled ? '' : 'border'} flex items-center justify-center shrink-0`}
         >
-          {profile.fullName || 'Your Name'}
-        </h1>
-        {profile.headline && (
-          <p style={{ color: 'var(--rv-title-color)' }} className="text-[1.1em] italic mt-0.5">
-            {profile.headline}
-          </p>
-        )}
-        <div className="mt-2.5 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[0.86em] text-[var(--rv-text)]">
-          {contactChips.map((chip, idx) => {
-            const Icon = chip.icon;
-            return (
-              <span key={idx} className="inline-flex items-center gap-1.5">
-                <span
-                  style={{ borderColor: 'var(--rv-icon-color)', color: 'var(--rv-icon-color)' }}
-                  className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"
-                >
-                  <Icon className="w-2.5 h-2.5" />
-                </span>
-                <span>{chip.text}</span>
-              </span>
-            );
-          })}
+          <Icon className="w-2.5 h-2.5" />
+        </span>
+      );
+    };
+
+    return (
+      <header className={`${isCentered ? 'text-center' : 'text-left'} pb-3 mb-3`}>
+        <div
+          className={
+            titleSameLine
+              ? `flex flex-wrap items-baseline gap-x-2.5 ${isCentered ? 'justify-center' : ''}`
+              : ''
+          }
+        >
+          <h1
+            style={{ ...headingStyle, color: 'var(--rv-name-color)' }}
+            className={`text-[2em] ${nameBold ? 'font-bold' : 'font-normal'} tracking-tight`}
+          >
+            {profile.fullName || 'Your Name'}
+          </h1>
+          {profile.headline && (
+            <p
+              style={{ color: 'var(--rv-title-color)' }}
+              className={`text-[1.1em] ${titleItalic ? 'italic' : 'not-italic'} ${
+                titleSameLine ? '' : 'mt-0.5'
+              }`}
+            >
+              {profile.headline}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`mt-2.5 text-[0.86em] text-[var(--rv-text)] ${
+            detailsGrid
+              ? 'grid grid-cols-3 gap-x-4 gap-y-1.5 text-left'
+              : `flex flex-wrap ${isCentered ? 'justify-center' : ''} gap-x-3.5 gap-y-1.5`
+          }`}
+        >
+          {contactChips.map((chip, idx) => (
+            <span
+              key={idx}
+              style={separator === 'icon' ? { color: 'var(--rv-text)' } : undefined}
+              className="inline-flex items-center gap-1.5"
+            >
+              {separator === 'icon' && renderIconBadge(chip.icon)}
+              {separator === 'bullet' && idx > 0 && !detailsGrid && (
+                <span className="opacity-50 mr-1">•</span>
+              )}
+              {separator === 'bar' && idx > 0 && !detailsGrid && (
+                <span className="opacity-40 mr-1">|</span>
+              )}
+              <span>{chip.text}</span>
+            </span>
+          ))}
         </div>
       </header>
     );
@@ -227,7 +284,11 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
 
     return (
       <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
-        <TemplateHeader data={data} headerStyle={effectiveHeaderStyle} />
+        <TemplateHeader
+          data={data}
+          headerStyle={effectiveHeaderStyle}
+          headerConfig={config.style.headerConfig}
+        />
         <div
           className="grid gap-5 items-start"
           style={{ gridTemplateColumns: ratio }}

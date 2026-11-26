@@ -47,6 +47,22 @@ export interface TemplateStyleTokens {
     entrySubtitle?: boolean;
     linkIcons?: boolean;
   };
+  headerConfig?: {
+    textAlign?: 'left' | 'center';
+    detailsLayout?: 'inline' | 'grid';
+    detailsSeparator?: 'icon' | 'bullet' | 'bar';
+    iconStyle?:
+      | 'plain'
+      | 'filled-circle'
+      | 'filled-rounded'
+      | 'filled-square'
+      | 'outline-circle'
+      | 'outline-rounded'
+      | 'outline-square';
+    nameBold?: boolean;
+    titleItalic?: boolean;
+    titlePosition?: 'below' | 'same-line';
+  };
 }
 
 export interface TemplateConfig {
