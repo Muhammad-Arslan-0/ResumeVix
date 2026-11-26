@@ -365,7 +365,11 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
   // Single-column & banner-header
   return (
     <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
-      <TemplateHeader data={data} headerStyle={effectiveHeaderStyle} />
+      <TemplateHeader
+        data={data}
+        headerStyle={effectiveHeaderStyle}
+        headerConfig={config.style.headerConfig}
+      />
       <main className="flex flex-col gap-[var(--rv-section-gap)]">
         {orderedSections.map((section) => (
           <SectionRenderer
