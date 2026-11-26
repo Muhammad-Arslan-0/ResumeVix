@@ -29,13 +29,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
     setError(null);
     try {
       if (mode === 'signup') {
-        const { error: err } = await supabase.auth.signUp({
+        const { data, error: err } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) throw err;
-        setVerifyEmailSent(true);
+        if (data.session) {
+          onClose();
+        } else {
+          setVerifyEmailSent(true);
+        }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -45,7 +49,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
         onClose();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      const authErr = err as { status?: number; code?: string; name?: string; message?: string };
+      console.error('[ResumeVix Auth Error]', {
+        mode,
+        email: email.trim(),
+        status: authErr?.status,
+        code: authErr?.code,
+        name: authErr?.name,
+        message: authErr?.message,
+        raw: err,
+      });
+      const details = [
+        authErr?.status ? `HTTP ${authErr.status}` : '',
+        authErr?.code ? `[${authErr.code}]` : '',
+        authErr?.message || 'Authentication failed',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      setError(details);
     } finally {
       setLoading(false);
     }
