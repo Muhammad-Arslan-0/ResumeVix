@@ -1,4 +1,5 @@
 import React from 'react';
+import { Github, Globe, Linkedin, Mail, MapPin, Phone } from 'lucide-react';
 import { ResumeData, SectionConfig, TemplateConfig } from '@/types';
 import { getTemplateMeta, TemplateDefinition } from './registry';
 import { PageShell, SectionRenderer } from './primitives';
@@ -66,6 +67,42 @@ function TemplateHeader({
             .map((item, i) => (
               <span key={i}>{item}</span>
             ))}
+        </div>
+      </header>
+    );
+  }
+
+  if (meta.headerStyle === 'icon-centered') {
+    const contactChips = [
+      profile.email ? { icon: Mail, text: profile.email } : null,
+      profile.phone ? { icon: Phone, text: profile.phone } : null,
+      profile.location ? { icon: MapPin, text: profile.location } : null,
+      profile.linkedin ? { icon: Linkedin, text: profile.linkedin } : null,
+      profile.website ? { icon: Globe, text: profile.website } : null,
+      profile.github ? { icon: Github, text: profile.github } : null,
+      profile.orcid ? { icon: Globe, text: `ORCID: ${profile.orcid}` } : null,
+    ].filter(Boolean) as Array<{ icon: React.ComponentType<{ className?: string }>; text: string }>;
+
+    return (
+      <header className="text-center pb-3 mb-3">
+        <h1 style={headingStyle} className="text-[2em] font-bold tracking-tight">
+          {profile.fullName || 'Your Name'}
+        </h1>
+        {profile.headline && (
+          <p className="text-[1.1em] italic text-[var(--rv-text)] mt-0.5">{profile.headline}</p>
+        )}
+        <div className="mt-2.5 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[0.86em] text-[var(--rv-text)]">
+          {contactChips.map((chip, idx) => {
+            const Icon = chip.icon;
+            return (
+              <span key={idx} className="inline-flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center shrink-0">
+                  <Icon className="w-2.5 h-2.5" />
+                </span>
+                <span>{chip.text}</span>
+              </span>
+            );
+          })}
         </div>
       </header>
     );
@@ -168,6 +205,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
                     section={section}
                     data={data}
                     variant={meta.variant}
+                    entryLayout={meta.entryLayout}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -179,6 +217,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
                     section={section}
                     data={data}
                     variant={meta.variant}
+                    entryLayout={meta.entryLayout}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -193,6 +232,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
                     section={section}
                     data={data}
                     variant={meta.variant}
+                    entryLayout={meta.entryLayout}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -204,6 +244,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
                     section={section}
                     data={data}
                     variant={meta.variant}
+                    entryLayout={meta.entryLayout}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -226,6 +267,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
             section={section}
             data={data}
             variant={meta.variant}
+            entryLayout={meta.entryLayout}
             highlightAuthorName={highlightName}
           />
         ))}

@@ -7,8 +7,8 @@ describe('useResumeStore', () => {
     useResumeStore.getState().loadPreset('tech');
   });
 
-  it('has 21 templates in the registry across 4 categories', () => {
-    expect(TEMPLATE_REGISTRY.length).toBe(21);
+  it('has 23 templates in the registry across 4 categories', () => {
+    expect(TEMPLATE_REGISTRY.length).toBe(23);
     const categories = new Set(TEMPLATE_REGISTRY.map((t) => t.category));
     expect(categories).toEqual(new Set(['ats', 'academic', 'executive', 'creative']));
   });

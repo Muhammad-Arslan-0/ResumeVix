@@ -14,13 +14,58 @@ export interface TemplateDefinition {
   layout: LayoutArchitecture;
   atsScore: 'Strict ATS' | 'ATS Friendly' | 'Visual';
   defaultStyle: Partial<TemplateStyleTokens>;
-  variant: 'ats-minimal' | 'academic-ruled' | 'modern-accent' | 'executive-bold' | 'creative-pill';
-  headerStyle?: 'left' | 'centered' | 'banner' | 'split';
+  variant:
+    | 'ats-minimal'
+    | 'academic-ruled'
+    | 'modern-accent'
+    | 'executive-bold'
+    | 'creative-pill'
+    | 'flowcv-banner';
+  headerStyle?: 'left' | 'centered' | 'banner' | 'split' | 'icon-centered';
+  entryLayout?: 'stacked' | 'date-left-rail';
   sidebarRatio?: string; // e.g. "32% 1fr"
 }
 
 export const TEMPLATE_REGISTRY: TemplateDefinition[] = [
-  // --- ATS-COMPLIANT / MINIMAL (6) ---
+  // --- FLOWCV SIGNATURE & ATS-COMPLIANT (8) ---
+  {
+    id: 'flowcv-classic',
+    name: 'Classic Editorial (FlowCV Style)',
+    category: 'ats',
+    description:
+      'Centered serif header with contact icons, tinted section banners, 2-column date/location entries, and 3-column skills.',
+    layout: 'single-column',
+    atsScore: 'Strict ATS',
+    variant: 'flowcv-banner',
+    headerStyle: 'icon-centered',
+    entryLayout: 'date-left-rail',
+    defaultStyle: {
+      fontFamily: 'Lora',
+      headingFontFamily: 'Lora',
+      accentColor: '#111827',
+      density: 'standard',
+      marginMm: 14,
+    },
+  },
+  {
+    id: 'flowcv-modern-teal',
+    name: 'Modern Editorial Teal',
+    category: 'executive',
+    description:
+      'Crisp sans-serif FlowCV-inspired layout with soft teal section bars and 2-column timeline entries.',
+    layout: 'single-column',
+    atsScore: 'Strict ATS',
+    variant: 'flowcv-banner',
+    headerStyle: 'icon-centered',
+    entryLayout: 'date-left-rail',
+    defaultStyle: {
+      fontFamily: 'Plus Jakarta Sans',
+      headingFontFamily: 'Plus Jakarta Sans',
+      accentColor: '#0f766e',
+      density: 'standard',
+      marginMm: 14,
+    },
+  },
   {
     id: 'ats-minimal',
     name: 'ATS Minimalist',

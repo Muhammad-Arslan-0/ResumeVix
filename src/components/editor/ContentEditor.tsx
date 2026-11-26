@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { DragHandle, SortableWrapper } from './SortableWrapper';
+import { AddSectionModal } from '@/components/modals/AddSectionModal';
 import { executeStructuredAI } from '@/lib/ai/adapter';
 import {
   buildRefineSummaryPrompts,
@@ -77,7 +78,6 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   const updateSkillGroup = useResumeStore((s) => s.updateSkillGroup);
   const removeSkillGroup = useResumeStore((s) => s.removeSkillGroup);
 
-  const addCustomSection = useResumeStore((s) => s.addCustomSection);
   const removeCustomSection = useResumeStore((s) => s.removeCustomSection);
   const addCustomEntry = useResumeStore((s) => s.addCustomEntry);
   const updateCustomEntry = useResumeStore((s) => s.updateCustomEntry);
@@ -88,7 +88,7 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
     summary: true,
     experience: true,
   });
-  const [newCustomTitle, setNewCustomTitle] = useState('');
+  const [addSectionOpen, setAddSectionOpen] = useState(false);
   const [aiBusyId, setAiBusyId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -873,29 +873,19 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
         </SortableContext>
       </DndContext>
 
-      {/* Add Custom Section */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!newCustomTitle.trim()) return;
-          addCustomSection(newCustomTitle.trim());
-          setNewCustomTitle('');
-        }}
-        className="flex gap-2 pt-2"
-      >
-        <input
-          value={newCustomTitle}
-          onChange={(e) => setNewCustomTitle(e.target.value)}
-          placeholder="New custom section (e.g. Grants, Certifications)..."
-          className={inputClass}
-        />
+      {/* Add Content / Section Button (FlowCV-style) */}
+      <div className="pt-2">
         <button
-          type="submit"
-          className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium shrink-0 hover:opacity-90"
+          type="button"
+          onClick={() => setAddSectionOpen(true)}
+          className="w-full py-2.5 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-950/20 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition"
         >
-          Add Section
+          <Plus className="w-4 h-4 text-teal-600" />
+          <span>Add Content / Section</span>
         </button>
-      </form>
+      </div>
+
+      <AddSectionModal open={addSectionOpen} onClose={() => setAddSectionOpen(false)} />
     </div>
   );
 };

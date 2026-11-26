@@ -88,48 +88,170 @@ export async function extractTextFromPdf(file: File): Promise<string> {
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const strings = content.items
-      .map((item) => ('str' in item ? item.str : ''))
-      .filter(Boolean);
-    pages.push(strings.join(' '));
+    const lines: string[] = [];
+    let currentLine: string[] = [];
+    let lastY: number | null = null;
+
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str) continue;
+      const y = Array.isArray(item.transform) ? item.transform[5] : null;
+      if (lastY !== null && y !== null && Math.abs(y - lastY) > 4) {
+        if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
+        currentLine = [];
+      }
+      currentLine.push(item.str);
+      if (y !== null) lastY = y;
+    }
+    if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
+    pages.push(lines.filter(Boolean).join('\n'));
   }
 
-  return pages.join('\n\n').trim();
+  return pages.join('\n').trim();
 }
+
+const SECTION_HEADER_PATTERNS: Array<{ key: string; regex: RegExp }> = [
+  { key: 'summary', regex: /^(profile|summary|about me|objective)$/i },
+  { key: 'experience', regex: /^(professional\s+)?experience|work\s+history|employment$/i },
+  { key: 'education', regex: /^education|academic\s+background$/i },
+  { key: 'skills', regex: /^(technical\s+)?skills|competencies$/i },
+  { key: 'projects', regex: /^(selected\s+)?projects$/i },
+  { key: 'languages', regex: /^languages$/i },
+  { key: 'publications', regex: /^publications$/i },
+];
 
 export function parseResumeTextHeuristic(rawText: string): ResumeData {
   const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  const phoneMatch = rawText.match(/(\+?\d[\d\s\-()]{7,18}\d)/);
+  const phoneMatch = rawText.match(/(\+?\(?\d{1,4}\)?[\d\s\-()]{6,16}\d)/);
   const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
   const githubMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i);
 
   const lines = rawText
-    .split(/\n+/)
+    .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const firstWords = (lines[0] || '').split(/\s+/).slice(0, 4).join(' ');
+  const buckets: Record<string, string[]> = { header: [] };
+  let currentSection = 'header';
+
+  for (const line of lines) {
+    const matched = SECTION_HEADER_PATTERNS.find((p) => p.regex.test(line));
+    if (matched) {
+      currentSection = matched.key;
+      if (!buckets[currentSection]) buckets[currentSection] = [];
+      continue;
+    }
+    if (!buckets[currentSection]) buckets[currentSection] = [];
+    buckets[currentSection].push(line);
+  }
+
+  const headerLines = buckets.header || [];
+  const fullName = headerLines[0] || '';
+  const headline =
+    headerLines[1] && !headerLines[1].includes('@') && !/\d{4,}/.test(headerLines[1])
+      ? headerLines[1]
+      : '';
+
+  const summaryText = (buckets.summary || []).join(' ').trim();
+  const expLines = buckets.experience || [];
+  const eduLines = buckets.education || [];
+  const skillLines = buckets.skills || [];
+  const projectLines = buckets.projects || [];
+  const languageLines = buckets.languages || [];
+
+  const experience: ResumeData['experience'] = [];
+  if (expLines.length > 0) {
+    experience.push({
+      id: uid('exp', 0),
+      company: '',
+      role: expLines[0] || 'Experience',
+      startDate: '',
+      endDate: '',
+      current: false,
+      visible: true,
+      bullets: expLines
+        .slice(1)
+        .map((l) => l.replace(/^[•\-*]\s*/, ''))
+        .filter(Boolean),
+    });
+  }
+
+  const education: ResumeData['education'] = [];
+  if (eduLines.length > 0) {
+    education.push({
+      id: uid('edu', 0),
+      institution: eduLines.slice(1).join(' — ') || '',
+      degree: eduLines[0] || 'Education',
+      startDate: '',
+      endDate: '',
+      visible: true,
+    });
+  }
+
+  const skills: ResumeData['skills'] =
+    skillLines.length > 0
+      ? [
+          {
+            id: uid('skill', 0),
+            category: 'Skills',
+            items: skillLines
+              .join(', ')
+              .split(/[,•|]+/)
+              .map((s) => s.trim())
+              .filter(Boolean),
+            visible: true,
+          },
+        ]
+      : [];
+
+  const projects: ResumeData['projects'] =
+    projectLines.length > 0
+      ? [
+          {
+            id: uid('proj', 0),
+            name: projectLines[0].replace(/^[•\-*]\s*/, ''),
+            technologies: [],
+            bullets: projectLines.slice(1),
+            visible: true,
+          },
+        ]
+      : [];
+
+  const customSections: ResumeData['customSections'] = {};
+  if (languageLines.length > 0) {
+    customSections.custom_languages = {
+      id: 'custom_languages',
+      title: 'Languages',
+      entries: [
+        {
+          id: uid('lang', 0),
+          title: languageLines.join(' • '),
+          bullets: [],
+          visible: true,
+        },
+      ],
+    };
+  }
 
   return {
     id: `resume-${Date.now()}`,
-    title: firstWords ? `${firstWords} CV` : 'Imported CV',
+    title: fullName ? `${fullName} — CV` : 'Imported CV',
     updatedAt: new Date().toISOString(),
     profile: {
-      fullName: firstWords,
-      headline: '',
+      fullName,
+      headline,
       email: emailMatch?.[0] || '',
       phone: phoneMatch?.[0]?.trim() || '',
       location: '',
       linkedin: linkedinMatch?.[0],
       github: githubMatch?.[0],
     },
-    summary: rawText.slice(0, 600),
-    experience: [],
-    education: [],
+    summary: summaryText || (!expLines.length ? rawText.slice(0, 600) : ''),
+    experience,
+    education,
     publications: [],
-    projects: [],
-    skills: [],
-    customSections: {},
+    projects,
+    skills,
+    customSections,
   };
 }
 

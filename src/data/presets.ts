@@ -201,14 +201,14 @@ export const ACADEMIC_CV_PRESET: ResumeData = {
 };
 
 export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
-  templateId: 'ats-minimal',
+  templateId: 'flowcv-classic',
   pageSize: 'A4',
   style: {
-    fontFamily: 'Inter',
-    headingFontFamily: 'Inter',
+    fontFamily: 'Lora',
+    headingFontFamily: 'Lora',
     fontSizePt: 10,
     lineHeight: 1.4,
-    accentColor: '#0f766e',
+    accentColor: '#111827',
     textColor: '#111827',
     mutedColor: '#4b5563',
     marginMm: 14,

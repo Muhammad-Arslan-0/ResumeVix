@@ -45,6 +45,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const futureCount = useResumeStore((s) => s.future.length);
 
   const toggleEditorTheme = useResumeStore((s) => s.toggleEditorTheme);
+  const updateResumeTitle = useResumeStore((s) => s.updateResumeTitle);
   const setPageSize = useResumeStore((s) => s.setPageSize);
   const loadPreset = useResumeStore((s) => s.loadPreset);
   const importResumeBundle = useResumeStore((s) => s.importResumeBundle);
@@ -81,9 +82,12 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             alt="ResumeVix"
             className="w-7 h-7 rounded-lg object-cover shadow-sm"
           />
-          <span className="font-semibold tracking-tight text-slate-900 dark:text-white hidden sm:inline">
-            ResumeVix
-          </span>
+          <input
+            value={resume.title}
+            onChange={(e) => updateResumeTitle(e.target.value)}
+            aria-label="Resume Title"
+            className="hidden sm:block text-xs font-semibold tracking-tight text-slate-900 dark:text-white bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500 rounded px-2 py-1 w-40 md:w-52 truncate"
+          />
         </div>
 
         <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs">
