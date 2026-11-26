@@ -41,6 +41,47 @@ export default function CreateResumePage() {
   const [importedResume, setImportedResume] = useState<ResumeData | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
 
+  const createAndOpenStudio = async (
+    baseResume: ResumeData,
+    chosenTitle: string,
+    chosenPreset: StartingPreset
+  ) => {
+    baseResume.id = `resume-${Date.now()}`;
+    baseResume.title = chosenTitle.trim() || 'Untitled Resume';
+    baseResume.updatedAt = new Date().toISOString();
+
+    const chosenTemplateId = chosenPreset === 'academic' ? 'academic-cv' : 'ats-minimal';
+    const meta = getTemplateMeta(chosenTemplateId);
+    const baseConfig: TemplateConfig = {
+      ...JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_CONFIG)),
+      templateId: chosenTemplateId,
+      pageSize,
+    };
+    if (meta?.defaultStyle) {
+      Object.assign(baseConfig.style, meta.defaultStyle);
+    }
+    if (chosenPreset === 'academic') {
+      const pubSec = baseConfig.sections.find((s) => s.id === 'publications');
+      if (pubSec) pubSec.visible = true;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (supabase && authUser) {
+      const record = await createCloudResume(
+        supabase,
+        authUser.id,
+        baseResume,
+        baseConfig,
+        baseResume.title
+      );
+      loadCloudResume(record.id, record.resume_data, record.template_config);
+    } else {
+      importResumeBundle(baseResume, baseConfig);
+    }
+
+    router.push('/');
+  };
+
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -48,21 +89,20 @@ export default function CreateResumePage() {
     setError(null);
     setImportSummary(null);
     try {
-      const { data, usedAI } = await parsePdfToResumeData(file, aiConfig);
+      const { data } = await parsePdfToResumeData(file, aiConfig);
       setImportedResume(data);
       setPreset('pdf');
-      if (title === 'My New Resume' && data.title) {
-        setTitle(data.title);
-      }
-      setImportSummary(
-        usedAI
-          ? `Autofilled via AI: ${data.profile.fullName || 'Profile'}, ${data.experience.length} experience, ${data.education.length} education, ${data.skills.length} skill groups.`
-          : `Extracted basic contact & summary locally (add an AI key in Studio for full structured parsing).`
-      );
+      const finalTitle = title === 'My New Resume' && data.title ? data.title : title;
+      setTitle(finalTitle);
+      await createAndOpenStudio(data, finalTitle, 'pdf');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse PDF');
-    } finally {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || 'Failed to parse PDF';
+      setError(msg);
       setPdfParsing(false);
+    } finally {
       e.target.value = '';
     }
   };
@@ -116,42 +156,13 @@ export default function CreateResumePage() {
                 customSections: {},
               };
 
-      baseResume.id = `resume-${Date.now()}`;
-      baseResume.title = title.trim() || 'Untitled Resume';
-      baseResume.updatedAt = new Date().toISOString();
-
-      const chosenTemplateId = preset === 'academic' ? 'academic-cv' : 'ats-minimal';
-      const meta = getTemplateMeta(chosenTemplateId);
-      const baseConfig: TemplateConfig = {
-        ...JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_CONFIG)),
-        templateId: chosenTemplateId,
-        pageSize,
-      };
-      if (meta?.defaultStyle) {
-        Object.assign(baseConfig.style, meta.defaultStyle);
-      }
-      if (preset === 'academic') {
-        const pubSec = baseConfig.sections.find((s) => s.id === 'publications');
-        if (pubSec) pubSec.visible = true;
-      }
-
-      const supabase = getSupabaseBrowserClient();
-      if (supabase && authUser) {
-        const record = await createCloudResume(
-          supabase,
-          authUser.id,
-          baseResume,
-          baseConfig,
-          baseResume.title
-        );
-        loadCloudResume(record.id, record.resume_data, record.template_config);
-      } else {
-        importResumeBundle(baseResume, baseConfig);
-      }
-
-      router.push('/');
+      await createAndOpenStudio(baseResume, title, preset);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create resume');
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message || 'Failed to create resume';
+      setError(msg);
       setCreating(false);
     }
   };

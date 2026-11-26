@@ -34,6 +34,14 @@ export async function createCloudResume(
   template: TemplateConfig,
   titleOverride?: string
 ): Promise<CloudResumeRecord> {
+  // Ensure public.users row exists (covers accounts created before SQL trigger was applied)
+  await supabase
+    .from('users')
+    .upsert(
+      { id: userId, email: resume.profile.email || 'user@resumevix.app' },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+
   const { data, error } = await supabase
     .from('resumes')
     .insert({
@@ -45,7 +53,7 @@ export async function createCloudResume(
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data as CloudResumeRecord;
 }
 

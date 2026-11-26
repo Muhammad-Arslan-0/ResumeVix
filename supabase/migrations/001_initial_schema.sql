@@ -49,26 +49,42 @@ create table if not exists public.user_settings (
   updated_at timestamptz not null default now()
 );
 
+-- Schema & Table Grants for Supabase API roles
+grant usage on schema public to anon, authenticated;
+grant select on public.templates to anon, authenticated;
+grant select, insert, update, delete on public.users to authenticated;
+grant select, insert, update, delete on public.resumes to authenticated;
+grant select, insert, update, delete on public.user_settings to authenticated;
+
 -- Row Level Security (RLS)
 alter table public.users enable row level security;
 alter table public.templates enable row level security;
 alter table public.resumes enable row level security;
 alter table public.user_settings enable row level security;
 
+drop policy if exists "Users can view own profile" on public.users;
 create policy "Users can view own profile"
   on public.users for select using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.users;
+create policy "Users can insert own profile"
+  on public.users for insert with check (auth.uid() = id);
+
+drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update using (auth.uid() = id);
 
+drop policy if exists "Templates are readable by all" on public.templates;
 create policy "Templates are readable by all"
   on public.templates for select using (true);
 
+drop policy if exists "Users can CRUD own resumes" on public.resumes;
 create policy "Users can CRUD own resumes"
   on public.resumes for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can CRUD own settings" on public.user_settings;
 create policy "Users can CRUD own settings"
   on public.user_settings for all
   using (auth.uid() = user_id)
