@@ -7,6 +7,7 @@ export interface AIProviderMeta {
   models: string[];
   requiresCustomBaseUrl?: boolean;
   keyPlaceholder: string;
+  apiKeyUrl?: string;
 }
 
 export const AI_PROVIDERS: AIProviderMeta[] = [
@@ -16,6 +17,7 @@ export const AI_PROVIDERS: AIProviderMeta[] = [
     defaultModel: 'gemini-2.5-flash',
     models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
     keyPlaceholder: 'AIzaSy...',
+    apiKeyUrl: 'https://aistudio.google.com/app/apikey',
   },
   {
     id: 'openai',
@@ -23,6 +25,7 @@ export const AI_PROVIDERS: AIProviderMeta[] = [
     defaultModel: 'gpt-4o-mini',
     models: ['gpt-4o-mini', 'gpt-4o', 'o3-mini'],
     keyPlaceholder: 'sk-...',
+    apiKeyUrl: 'https://platform.openai.com/api-keys',
   },
   {
     id: 'anthropic',
@@ -30,6 +33,7 @@ export const AI_PROVIDERS: AIProviderMeta[] = [
     defaultModel: 'claude-3-5-sonnet-latest',
     models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-7-sonnet-latest'],
     keyPlaceholder: 'sk-ant-...',
+    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
   },
   {
     id: 'openrouter',
@@ -42,6 +46,7 @@ export const AI_PROVIDERS: AIProviderMeta[] = [
       'meta-llama/llama-3.3-70b-instruct',
     ],
     keyPlaceholder: 'sk-or-...',
+    apiKeyUrl: 'https://openrouter.ai/keys',
   },
   {
     id: 'custom',

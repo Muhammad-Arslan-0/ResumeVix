@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Eye, EyeOff, KeyRound, ShieldCheck, X } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff, KeyRound, ShieldCheck, X } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { AI_PROVIDERS, getProviderMeta } from '@/lib/ai/providers';
 import { AIProviderId } from '@/types';
@@ -120,7 +120,20 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onClose 
           )}
 
           <div>
-            <label className="block font-medium mb-1">API Key</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-medium">API Key</label>
+              {meta.apiKeyUrl && (
+                <a
+                  href={meta.apiKeyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 hover:underline font-medium"
+                >
+                  <span>Get {meta.label} API Key</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
             <div className="relative">
               <input
                 type={showKey ? 'text' : 'password'}
