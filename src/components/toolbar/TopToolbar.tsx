@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   Download,
   FileUp,
+  FolderKanban,
   KeyRound,
+  LogIn,
+  LogOut,
   Moon,
   Printer,
   Redo2,
@@ -16,21 +20,26 @@ import { useResumeStore } from '@/store/useResumeStore';
 import { exportResumeToJson, parseImportedJson } from '@/lib/export/json';
 import { triggerPrintPdf } from '@/lib/export/pdf';
 import { getProviderMeta } from '@/lib/ai/providers';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { SyncStatusBadge } from './SyncStatusBadge';
 
 interface TopToolbarProps {
   onOpenAISettings: () => void;
+  onOpenAuth: () => void;
   mobileView: 'editor' | 'preview';
   onToggleMobileView: (view: 'editor' | 'preview') => void;
 }
 
 export const TopToolbar: React.FC<TopToolbarProps> = ({
   onOpenAISettings,
+  onOpenAuth,
   mobileView,
   onToggleMobileView,
 }) => {
   const resume = useResumeStore((s) => s.resume);
   const template = useResumeStore((s) => s.template);
   const aiConfig = useResumeStore((s) => s.aiConfig);
+  const authUser = useResumeStore((s) => s.authUser);
   const editorTheme = useResumeStore((s) => s.editorTheme);
   const pastCount = useResumeStore((s) => s.past.length);
   const futureCount = useResumeStore((s) => s.future.length);
@@ -123,10 +132,45 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2">
+        <SyncStatusBadge />
+
         {importError && (
           <span className="text-xs text-red-600 dark:text-red-400 hidden xl:inline">
             {importError}
           </span>
+        )}
+
+        <Link
+          href="/dashboard"
+          title="My Resumes Dashboard"
+          className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <FolderKanban className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">Resumes</span>
+        </Link>
+
+        {authUser ? (
+          <button
+            type="button"
+            onClick={async () => {
+              const sb = getSupabaseBrowserClient();
+              if (sb) await sb.auth.signOut();
+            }}
+            title={`Signed in as ${authUser.email} (Click to sign out)`}
+            className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenAuth}
+            title="Sign in or Sign up for Cloud Sync"
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sign In</span>
+          </button>
         )}
 
         <div className="hidden sm:flex items-center gap-0.5 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5">

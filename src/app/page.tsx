@@ -9,13 +9,18 @@ import { DesignPanel } from '@/components/design/DesignPanel';
 import { DesignBySelfPanel } from '@/components/ai/DesignBySelfPanel';
 import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
 import { AISettingsModal } from '@/components/modals/AISettingsModal';
+import { AuthModal } from '@/components/modals/AuthModal';
+import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
 
 export default function ResumeVixWorkspace() {
+  useCloudAutoSave();
+
   const editorTheme = useResumeStore((s) => s.editorTheme);
   const activeTab = useResumeStore((s) => s.activeTab);
   const setActiveTab = useResumeStore((s) => s.setActiveTab);
 
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
   useEffect(() => {
@@ -28,6 +33,7 @@ export default function ResumeVixWorkspace() {
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
       <TopToolbar
         onOpenAISettings={() => setAiSettingsOpen(true)}
+        onOpenAuth={() => setAuthOpen(true)}
         mobileView={mobileView}
         onToggleMobileView={setMobileView}
       />
@@ -105,6 +111,7 @@ export default function ResumeVixWorkspace() {
       </div>
 
       <AISettingsModal open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} />
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }

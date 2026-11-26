@@ -109,13 +109,50 @@ export async function executeStructuredAI<T>(
   config: AIConfig,
   systemPrompt: string,
   userPrompt: string,
-  schema: z.ZodSchema<T>
+  schema: z.ZodSchema<T>,
+  taskType: 'light' | 'design' = 'light'
 ): Promise<T> {
+  // Default lightweight free-tier fallback when no BYOK key is supplied
   if (!config.apiKey.trim() && config.provider !== 'custom') {
-    throw new AIAdapterError(
-      'MISSING_KEY',
-      'No API key configured. Open AI Settings to add your BYOK key.'
-    );
+    const defaultModel =
+      taskType === 'design' ? 'gemini-3.8-flash' : 'gemini-3.5-flash-lite';
+    let res: Response;
+    try {
+      res = await fetch('/api/ai/default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: defaultModel,
+          systemPrompt,
+          userPrompt,
+        }),
+      });
+    } catch (err) {
+      throw new AIAdapterError(
+        'NETWORK_CORS',
+        `Network error calling default AI route: ${
+          err instanceof Error ? err.message : 'Unknown error'
+        }`
+      );
+    }
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      if (res.status === 503) {
+        throw new AIAdapterError(
+          'MISSING_KEY',
+          'No BYOK API key configured and server free-tier key is not set. Open AI Settings to add your key.'
+        );
+      }
+      throw normalizeHttpError(res.status, errText);
+    }
+
+    const json = (await res.json()) as Record<string, unknown>;
+    const candidates = json.candidates as Array<{
+      content?: { parts?: Array<{ text?: string }> };
+    }>;
+    const rawText = candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    return parseAndValidateJSON(rawText, schema);
   }
 
   const payload = buildProviderPayload(config, systemPrompt, userPrompt);

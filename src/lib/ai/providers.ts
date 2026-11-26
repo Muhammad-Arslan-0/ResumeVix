@@ -15,7 +15,7 @@ export const AI_PROVIDERS: AIProviderMeta[] = [
     id: 'gemini',
     label: 'Google Gemini',
     defaultModel: 'gemini-3.8-flash',
-    models: ['gemini-3.8-flash'],
+    models: ['gemini-3.8-flash', 'gemini-3.5-flash-lite'],
     keyPlaceholder: 'AIzaSy...',
     apiKeyUrl: 'https://aistudio.google.com/app/apikey',
   },

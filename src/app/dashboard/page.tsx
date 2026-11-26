@@ -1,0 +1,232 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Archive,
+  ArrowLeft,
+  Copy,
+  FilePlus2,
+  Loader2,
+  Trash2,
+} from 'lucide-react';
+import { useResumeStore } from '@/store/useResumeStore';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import {
+  CloudResumeRecord,
+  createCloudResume,
+  deleteCloudResume,
+  listCloudResumes,
+  setCloudResumeArchived,
+} from '@/lib/sync/resumes';
+import { DEFAULT_TEMPLATE_CONFIG, TECH_RESUME_PRESET } from '@/data/presets';
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const authUser = useResumeStore((s) => s.authUser);
+  const resume = useResumeStore((s) => s.resume);
+  const template = useResumeStore((s) => s.template);
+  const loadCloudResume = useResumeStore((s) => s.loadCloudResume);
+  const loadPreset = useResumeStore((s) => s.loadPreset);
+
+  const [cloudResumes, setCloudResumes] = useState<CloudResumeRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const refreshCloud = async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || !authUser) return;
+    setLoading(true);
+    try {
+      const list = await listCloudResumes(supabase, authUser.id);
+      setCloudResumes(list);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshCloud();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser]);
+
+  const handleCreateNew = async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (supabase && authUser) {
+      const created = await createCloudResume(
+        supabase,
+        authUser.id,
+        { ...TECH_RESUME_PRESET, id: `resume-${Date.now()}`, title: 'New Resume' },
+        DEFAULT_TEMPLATE_CONFIG,
+        'New Resume'
+      );
+      loadCloudResume(created.id, created.resume_data, created.template_config);
+    } else {
+      loadPreset('tech');
+    }
+    router.push('/');
+  };
+
+  const handleDuplicate = async (item: CloudResumeRecord) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || !authUser) return;
+    await createCloudResume(
+      supabase,
+      authUser.id,
+      { ...item.resume_data, title: `${item.title} (Copy)` },
+      item.template_config,
+      `${item.title} (Copy)`
+    );
+    await refreshCloud();
+  };
+
+  const handleArchiveToggle = async (item: CloudResumeRecord) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    await setCloudResumeArchived(supabase, item.id, !item.is_archived);
+    await refreshCloud();
+  };
+
+  const handleDelete = async (id: string) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    await deleteCloudResume(supabase, id);
+    await refreshCloud();
+  };
+
+  const visibleResumes = cloudResumes.filter((r) => (showArchived ? true : !r.is_archived));
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-6 sm:p-10">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Studio</span>
+            </Link>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">My Resumes & CVs</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {authUser ? `Synced to ${authUser.email}` : 'Guest Mode (Local Draft)'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {authUser && (
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="accent-teal-600"
+                />
+                <span>Show archived</span>
+              </label>
+            )}
+            <button
+              type="button"
+              onClick={handleCreateNew}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              <FilePlus2 className="w-4 h-4" />
+              <span>New Resume</span>
+            </button>
+          </div>
+        </div>
+
+        {!authUser ? (
+          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-sm">{resume.title}</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Template: {template.templateId} • Local Browser Storage
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="px-3.5 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-medium"
+            >
+              Open in Editor
+            </Link>
+          </div>
+        ) : loading ? (
+          <div className="flex items-center justify-center py-16 text-slate-500 gap-2 text-xs">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading cloud resumes...</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleResumes.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between gap-4"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-semibold text-sm line-clamp-1">{item.title}</h2>
+                    {item.is_archived && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                        Archived
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Template: <span className="font-mono">{item.template_id}</span>
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Updated {new Date(item.updated_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loadCloudResume(item.id, item.resume_data, item.template_config);
+                      router.push('/');
+                    }}
+                    className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:underline"
+                  >
+                    Open Editor
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(item)}
+                      title="Duplicate"
+                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveToggle(item)}
+                      title={item.is_archived ? 'Unarchive' : 'Archive'}
+                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.id)}
+                      title="Delete"
+                      className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-500 hover:text-red-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

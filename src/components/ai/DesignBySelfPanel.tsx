@@ -43,7 +43,8 @@ export const DesignBySelfPanel: React.FC<{ onOpenSettings: () => void }> = ({
         aiConfig,
         systemPrompt,
         userPrompt,
-        AIDesignPatchSchema
+        AIDesignPatchSchema,
+        'design'
       );
       applyAIDesignPatch(patch);
       setLastRationale(patch.rationale);

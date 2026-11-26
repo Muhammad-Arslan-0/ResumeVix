@@ -24,6 +24,13 @@ interface HistorySnapshot {
 }
 
 export type EditorTab = 'content' | 'design' | 'ai';
+export type SyncStatus = 'guest' | 'saved' | 'saving' | 'unsaved' | 'error';
+
+export interface AuthUserSummary {
+  id: string;
+  email: string;
+  fullName?: string;
+}
 
 interface ResumeStoreState {
   resume: ResumeData;
@@ -34,6 +41,18 @@ interface ResumeStoreState {
   previewZoom: number;
   past: HistorySnapshot[];
   future: HistorySnapshot[];
+
+  // Cloud Sync & Auth
+  authUser: AuthUserSummary | null;
+  activeResumeId: string | null;
+  syncStatus: SyncStatus;
+  lastSavedAt: string | null;
+  hasLocalEdits: boolean;
+
+  setAuthUser: (user: AuthUserSummary | null) => void;
+  setSyncState: (status: SyncStatus, lastSavedAt?: string | null) => void;
+  loadCloudResume: (id: string, resume: ResumeData, template: TemplateConfig) => void;
+  markLocalDirty: () => void;
 
   // Actions
   setActiveTab: (tab: EditorTab) => void;
@@ -132,6 +151,45 @@ export const useResumeStore = create<ResumeStoreState>()(
       previewZoom: 0.85,
       past: [],
       future: [],
+
+      authUser: null,
+      activeResumeId: null,
+      syncStatus: 'guest',
+      lastSavedAt: null,
+      hasLocalEdits: false,
+
+      setAuthUser: (user) =>
+        set((state) => {
+          state.authUser = user;
+          if (!user) {
+            state.activeResumeId = null;
+            state.syncStatus = 'guest';
+          }
+        }),
+
+      setSyncState: (status, lastSavedAt) =>
+        set((state) => {
+          state.syncStatus = status;
+          if (lastSavedAt !== undefined) {
+            state.lastSavedAt = lastSavedAt;
+          }
+        }),
+
+      loadCloudResume: (id, resume, template) =>
+        set((state) => {
+          state.activeResumeId = id;
+          state.resume = resume;
+          state.template = template;
+          state.hasLocalEdits = false;
+          state.past = [];
+          state.future = [];
+          state.syncStatus = 'saved';
+        }),
+
+      markLocalDirty: () =>
+        set((state) => {
+          if (!state.authUser) state.hasLocalEdits = true;
+        }),
 
       setActiveTab: (tab) =>
         set((state) => {
@@ -606,6 +664,7 @@ export const useResumeStore = create<ResumeStoreState>()(
         resume: state.resume,
         template: state.template,
         editorTheme: state.editorTheme,
+        hasLocalEdits: state.hasLocalEdits,
         aiConfig: state.aiConfig.persistKeyInLocalStorage
           ? state.aiConfig
           : { ...state.aiConfig, apiKey: '' },
