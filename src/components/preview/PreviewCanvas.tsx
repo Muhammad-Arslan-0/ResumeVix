@@ -113,38 +113,81 @@ export const PreviewCanvas: React.FC = () => {
           width: widthMm,
         }}
       >
-        {Array.from({ length: pageCount }).map((_, pageIdx) => (
-          <div key={pageIdx} className="flex flex-col items-center">
-            <div
-              className="bg-white shadow-xl rounded-[2px] box-border overflow-hidden"
-              style={{
-                width: widthMm,
-                height: `${pageH}px`,
-                padding: `${deferredTemplate.style.marginMm}mm`,
-              }}
-            >
+        {Array.from({ length: pageCount }).map((_, pageIdx) => {
+          const fc = deferredTemplate.style.footerConfig;
+          const interpolate = (tpl: string) =>
+            tpl
+              .replace(/\{\{name\}\}/gi, deferredResume.profile.fullName || '')
+              .replace(/\{\{phone\}\}/gi, deferredResume.profile.phone || '')
+              .replace(/\{\{email\}\}/gi, deferredResume.profile.email || '')
+              .replace(/\{\{page\}\}/gi, String(pageIdx + 1))
+              .replace(/\{\{pages\}\}/gi, String(pageCount));
+
+          const leftFooter = fc?.customEnabled
+            ? interpolate(fc.leftText || '')
+            : fc?.showName
+              ? deferredResume.profile.fullName
+              : '';
+          const centerFooter = fc?.customEnabled
+            ? interpolate(fc.centerText || '')
+            : fc?.showEmail
+              ? deferredResume.profile.email
+              : '';
+          const rightFooter = fc?.customEnabled
+            ? interpolate(fc.rightText || '')
+            : fc?.showPageNumbers
+              ? `${pageIdx + 1} / ${pageCount}`
+              : '';
+          const hasFooter = Boolean(leftFooter || centerFooter || rightFooter);
+
+          return (
+            <div key={pageIdx} className="flex flex-col items-center">
               <div
-                className="overflow-hidden"
-                style={{ height: `${contentPerPagePx}px` }}
+                className="bg-white shadow-xl rounded-[2px] box-border overflow-hidden relative"
+                style={{
+                  width: widthMm,
+                  height: `${pageH}px`,
+                  padding: `${deferredTemplate.style.marginMm}mm`,
+                }}
               >
                 <div
-                  style={{
-                    transform: `translateY(-${pageIdx * contentPerPagePx}px)`,
-                  }}
+                  className="overflow-hidden"
+                  style={{ height: `${contentPerPagePx}px` }}
                 >
-                  <UnifiedTemplateRenderer
-                    data={deferredResume}
-                    config={deferredTemplate}
-                    bare
-                  />
+                  <div
+                    style={{
+                      transform: `translateY(-${pageIdx * contentPerPagePx}px)`,
+                    }}
+                  >
+                    <UnifiedTemplateRenderer
+                      data={deferredResume}
+                      config={deferredTemplate}
+                      bare
+                    />
+                  </div>
                 </div>
+
+                {hasFooter && (
+                  <div
+                    className="absolute left-0 right-0 bottom-2 grid grid-cols-3 items-center text-[10px] text-slate-500"
+                    style={{
+                      paddingLeft: `${deferredTemplate.style.marginMm}mm`,
+                      paddingRight: `${deferredTemplate.style.marginMm}mm`,
+                      fontFamily: `'${deferredTemplate.style.fontFamily}', sans-serif`,
+                    }}
+                  >
+                    <span className="text-left truncate">{leftFooter}</span>
+                    <span className="text-center truncate">{centerFooter}</span>
+                    <span className="text-right truncate">{rightFooter}</span>
+                  </div>
+                )}
               </div>
+              <span className="mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                Page {pageIdx + 1} of {pageCount}
+              </span>
             </div>
-            <span className="mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              Page {pageIdx + 1} of {pageCount}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Print-Only Natural Flow (exact vector PDF pagination with @page rules) */}

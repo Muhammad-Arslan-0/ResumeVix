@@ -63,6 +63,15 @@ export interface TemplateStyleTokens {
     titleItalic?: boolean;
     titlePosition?: 'below' | 'same-line';
   };
+  footerConfig?: {
+    showPageNumbers?: boolean;
+    showEmail?: boolean;
+    showName?: boolean;
+    customEnabled?: boolean;
+    leftText?: string;
+    centerText?: string;
+    rightText?: string;
+  };
 }
 
 export interface TemplateConfig {

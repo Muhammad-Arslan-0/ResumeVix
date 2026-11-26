@@ -114,6 +114,10 @@ export const DesignPanel: React.FC = () => {
   const [activeNav, setActiveNav] = useState<CustomizeSection>('document');
   const [category, setCategory] = useState<TemplateCategory | 'all'>('all');
   const [headerAdvancedOpen, setHeaderAdvancedOpen] = useState(false);
+  const [footerAdvancedOpen, setFooterAdvancedOpen] = useState(false);
+  const [focusedFooterCol, setFocusedFooterCol] = useState<'leftText' | 'centerText' | 'rightText'>(
+    'leftText'
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -957,14 +961,137 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'footer' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
             <h3 className="font-semibold text-sm">Footer</h3>
-            <input
-              value={template.style.footerText || ''}
-              onChange={(e) => updateStyleConfig({ footerText: e.target.value })}
-              placeholder="Optional footer note (e.g. References available upon request)"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
-            />
+
+            <div className="space-y-2.5">
+              {(
+                [
+                  { key: 'showPageNumbers', label: 'Page numbers' },
+                  { key: 'showEmail', label: 'Email' },
+                  { key: 'showName', label: 'Name' },
+                ] as const
+              ).map((opt) => {
+                const fc = template.style.footerConfig || {};
+                return (
+                  <label key={opt.key} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(fc[opt.key])}
+                      onChange={(e) =>
+                        updateStyleConfig({
+                          footerConfig: { ...fc, [opt.key]: e.target.checked },
+                        })
+                      }
+                      className="accent-teal-600 rounded"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setFooterAdvancedOpen((v) => !v)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between font-medium text-slate-700 dark:text-slate-200"
+              >
+                <span>Advanced Settings</span>
+                {footerAdvancedOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+
+              {footerAdvancedOpen && (
+                <div className="p-3.5 pt-2 space-y-3 border-t border-slate-200 dark:border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer font-medium">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(template.style.footerConfig?.customEnabled)}
+                      onChange={(e) =>
+                        updateStyleConfig({
+                          footerConfig: {
+                            ...template.style.footerConfig,
+                            customEnabled: e.target.checked,
+                          },
+                        })
+                      }
+                      className="accent-teal-600 rounded"
+                    />
+                    <span>Custom footer</span>
+                  </label>
+
+                  <div className="space-y-1.5">
+                    <div className="font-semibold">Insert placeholders</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: 'Name', token: '{{name}}' },
+                        { label: 'Phone', token: '{{phone}}' },
+                        { label: 'Email', token: '{{email}}' },
+                        { label: 'Pagenumbers', token: '{{page}} / {{pages}}' },
+                      ].map((ph) => (
+                        <button
+                          key={ph.label}
+                          type="button"
+                          onClick={() => {
+                            const fc = template.style.footerConfig || {};
+                            const current = fc[focusedFooterCol] || '';
+                            updateStyleConfig({
+                              footerConfig: {
+                                ...fc,
+                                customEnabled: true,
+                                [focusedFooterCol]: `${current}${current ? ' ' : ''}${ph.token}`,
+                              },
+                            });
+                          }}
+                          className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-teal-500 text-[11px]"
+                        >
+                          <span>{ph.label} </span>
+                          <code className="font-mono text-[10px] text-slate-500">{ph.token}</code>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(
+                    [
+                      { key: 'leftText', label: 'Left column', placeholder: 'e.g. {{name}}' },
+                      { key: 'centerText', label: 'Center column', placeholder: 'Optional' },
+                      {
+                        key: 'rightText',
+                        label: 'Right column',
+                        placeholder: 'e.g. {{page}} / {{pages}}',
+                      },
+                    ] as const
+                  ).map((col) => {
+                    const fc = template.style.footerConfig || {};
+                    return (
+                      <div key={col.key}>
+                        <label className="block font-semibold mb-1">{col.label}</label>
+                        <input
+                          value={fc[col.key] || ''}
+                          onFocus={() => setFocusedFooterCol(col.key)}
+                          onChange={(e) =>
+                            updateStyleConfig({
+                              footerConfig: {
+                                ...fc,
+                                customEnabled: true,
+                                [col.key]: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder={col.placeholder}
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
