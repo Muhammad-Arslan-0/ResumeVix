@@ -1,23 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, FilePlus2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, FilePlus2, FileUp, Loader2, Sparkles } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
 import { isSupabaseConfigured, getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { AuthGate } from '@/components/auth/AuthGate';
-import { TEMPLATE_REGISTRY, getTemplateMeta } from '@/templates/registry';
+import { getTemplateMeta } from '@/templates/registry';
 import {
   ACADEMIC_CV_PRESET,
   DEFAULT_TEMPLATE_CONFIG,
   TECH_RESUME_PRESET,
 } from '@/data/presets';
 import { createCloudResume } from '@/lib/sync/resumes';
+import { parsePdfToResumeData } from '@/lib/import/pdfParser';
 import { PageSize, ResumeData, TemplateConfig } from '@/types';
 
-type StartingPreset = 'tech' | 'academic' | 'blank';
+type StartingPreset = 'tech' | 'academic' | 'blank' | 'pdf';
 
 export default function CreateResumePage() {
   useCloudAutoSave();
@@ -25,15 +26,46 @@ export default function CreateResumePage() {
   const router = useRouter();
   const authUser = useResumeStore((s) => s.authUser);
   const authChecking = useResumeStore((s) => s.authChecking);
+  const aiConfig = useResumeStore((s) => s.aiConfig);
   const loadCloudResume = useResumeStore((s) => s.loadCloudResume);
   const importResumeBundle = useResumeStore((s) => s.importResumeBundle);
 
   const [title, setTitle] = useState('My New Resume');
   const [preset, setPreset] = useState<StartingPreset>('tech');
-  const [templateId, setTemplateId] = useState('ats-minimal');
   const [pageSize, setPageSize] = useState<PageSize>('A4');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [importedResume, setImportedResume] = useState<ResumeData | null>(null);
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfParsing(true);
+    setError(null);
+    setImportSummary(null);
+    try {
+      const { data, usedAI } = await parsePdfToResumeData(file, aiConfig);
+      setImportedResume(data);
+      setPreset('pdf');
+      if (title === 'My New Resume' && data.title) {
+        setTitle(data.title);
+      }
+      setImportSummary(
+        usedAI
+          ? `Autofilled via AI: ${data.profile.fullName || 'Profile'}, ${data.experience.length} experience, ${data.education.length} education, ${data.skills.length} skill groups.`
+          : `Extracted basic contact & summary locally (add an AI key in Studio for full structured parsing).`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to parse PDF');
+    } finally {
+      setPdfParsing(false);
+      e.target.value = '';
+    }
+  };
 
   if (authChecking) {
     return (
@@ -53,12 +85,18 @@ export default function CreateResumePage() {
     setError(null);
 
     try {
+      if (preset === 'pdf' && !importedResume) {
+        throw new Error('Please upload a PDF CV first or choose another starting option.');
+      }
+
       const baseResume: ResumeData =
-        preset === 'academic'
-          ? JSON.parse(JSON.stringify(ACADEMIC_CV_PRESET))
-          : preset === 'tech'
-            ? JSON.parse(JSON.stringify(TECH_RESUME_PRESET))
-            : {
+        preset === 'pdf' && importedResume
+          ? JSON.parse(JSON.stringify(importedResume))
+          : preset === 'academic'
+            ? JSON.parse(JSON.stringify(ACADEMIC_CV_PRESET))
+            : preset === 'tech'
+              ? JSON.parse(JSON.stringify(TECH_RESUME_PRESET))
+              : {
                 id: `resume-${Date.now()}`,
                 title: title.trim() || 'Untitled Resume',
                 updatedAt: new Date().toISOString(),
@@ -82,10 +120,11 @@ export default function CreateResumePage() {
       baseResume.title = title.trim() || 'Untitled Resume';
       baseResume.updatedAt = new Date().toISOString();
 
-      const meta = getTemplateMeta(templateId);
+      const chosenTemplateId = preset === 'academic' ? 'academic-cv' : 'ats-minimal';
+      const meta = getTemplateMeta(chosenTemplateId);
       const baseConfig: TemplateConfig = {
         ...JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_CONFIG)),
-        templateId,
+        templateId: chosenTemplateId,
         pageSize,
       };
       if (meta?.defaultStyle) {
@@ -170,7 +209,7 @@ export default function CreateResumePage() {
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               1. Starting Content
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {(
                 [
                   {
@@ -209,36 +248,50 @@ export default function CreateResumePage() {
                   </p>
                 </button>
               ))}
-            </div>
-          </div>
 
-          {/* Template Picker */}
-          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              2. Choose Template ({TEMPLATE_REGISTRY.length} available)
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
-              {TEMPLATE_REGISTRY.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTemplateId(t.id)}
-                  className={`text-left p-3 rounded-xl border text-xs transition ${
-                    templateId === t.id
-                      ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/30 ring-1 ring-teal-600'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1 font-semibold">
-                    <span>{t.name}</span>
-                    {templateId === t.id && <Check className="w-3.5 h-3.5 text-teal-600" />}
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                    {t.description}
-                  </p>
-                </button>
-              ))}
+              {/* Import Previous CV (PDF) */}
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={handlePdfUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={pdfParsing}
+                className={`text-left p-3.5 rounded-xl border transition ${
+                  preset === 'pdf'
+                    ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/30 ring-1 ring-teal-600'
+                    : 'border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500'
+                }`}
+              >
+                <div className="font-semibold flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5">
+                    {pdfParsing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                    ) : (
+                      <FileUp className="w-3.5 h-3.5 text-teal-600" />
+                    )}
+                    <span>Import PDF CV</span>
+                  </span>
+                  {preset === 'pdf' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  {pdfParsing
+                    ? 'Extracting & autofilling details...'
+                    : 'Upload your previous PDF CV to autofill your details.'}
+                </p>
+              </button>
             </div>
+
+            {importSummary && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs text-teal-800 dark:text-teal-200">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>{importSummary}</span>
+              </div>
+            )}
           </div>
 
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
