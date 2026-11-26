@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ExternalLink, Eye, EyeOff, KeyRound, ShieldCheck, X } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff, KeyRound, Loader2, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { AI_PROVIDERS, getProviderMeta } from '@/lib/ai/providers';
 import { AIProviderId } from '@/types';
@@ -15,17 +15,73 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onClose 
   const aiConfig = useResumeStore((s) => s.aiConfig);
   const setAIConfig = useResumeStore((s) => s.setAIConfig);
   const [showKey, setShowKey] = useState(false);
+  const [liveModels, setLiveModels] = useState<string[] | null>(null);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [modelFetchError, setModelFetchError] = useState<string | null>(null);
 
   if (!open) return null;
 
   const meta = getProviderMeta(aiConfig.provider);
+  const displayedModels = liveModels && liveModels.length > 0 ? liveModels : meta.models;
 
   const handleProviderChange = (provider: AIProviderId) => {
     const nextMeta = getProviderMeta(provider);
+    setLiveModels(null);
+    setModelFetchError(null);
     setAIConfig({
       provider,
       model: nextMeta.defaultModel,
     });
+  };
+
+  const handleFetchModels = async () => {
+    if (!aiConfig.apiKey.trim() && aiConfig.provider !== 'custom') {
+      setModelFetchError('Enter your API key first to fetch live models.');
+      return;
+    }
+    setFetchingModels(true);
+    setModelFetchError(null);
+    try {
+      let ids: string[] = [];
+      if (aiConfig.provider === 'gemini') {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(
+            aiConfig.apiKey.trim()
+          )}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as {
+          models?: Array<{ name: string; supportedGenerationMethods?: string[] }>;
+        };
+        ids = (data.models ?? [])
+          .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
+          .map((m) => m.name.replace(/^models\//, ''));
+      } else if (aiConfig.provider === 'anthropic') {
+        ids = meta.models;
+      } else {
+        const baseUrl =
+          aiConfig.provider === 'openrouter'
+            ? 'https://openrouter.ai/api/v1'
+            : aiConfig.provider === 'custom'
+              ? (aiConfig.customBaseUrl || 'http://localhost:11434/v1').replace(/\/+$/, '')
+              : 'https://api.openai.com/v1';
+        const headers: Record<string, string> = {};
+        if (aiConfig.apiKey.trim()) headers['Authorization'] = `Bearer ${aiConfig.apiKey.trim()}`;
+        const res = await fetch(`${baseUrl}/models`, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as { data?: Array<{ id: string }> };
+        ids = (data.data ?? []).map((m) => m.id).slice(0, 60);
+      }
+      if (ids.length === 0) throw new Error('No compatible models returned.');
+      setLiveModels(ids);
+      if (!ids.includes(aiConfig.model)) {
+        setAIConfig({ model: ids[0] });
+      }
+    } catch (err) {
+      setModelFetchError(err instanceof Error ? err.message : 'Failed to load models');
+    } finally {
+      setFetchingModels(false);
+    }
   };
 
   return (
@@ -78,10 +134,27 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onClose 
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Model</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-medium">Model</label>
+              {aiConfig.provider !== 'anthropic' && (
+                <button
+                  type="button"
+                  onClick={handleFetchModels}
+                  disabled={fetchingModels}
+                  className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 hover:underline font-medium disabled:opacity-50"
+                >
+                  {fetchingModels ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3" />
+                  )}
+                  <span>Fetch Live Models</span>
+                </button>
+              )}
+            </div>
             <div className="flex gap-2">
               <select
-                value={meta.models.includes(aiConfig.model) ? aiConfig.model : '__custom__'}
+                value={displayedModels.includes(aiConfig.model) ? aiConfig.model : '__custom__'}
                 onChange={(e) => {
                   if (e.target.value !== '__custom__') {
                     setAIConfig({ model: e.target.value });
@@ -89,7 +162,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onClose 
                 }}
                 className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
               >
-                {meta.models.map((m) => (
+                {displayedModels.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
@@ -97,6 +170,9 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onClose 
                 <option value="__custom__">Custom model ID...</option>
               </select>
             </div>
+            {modelFetchError && (
+              <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">{modelFetchError}</p>
+            )}
             <input
               type="text"
               value={aiConfig.model}
