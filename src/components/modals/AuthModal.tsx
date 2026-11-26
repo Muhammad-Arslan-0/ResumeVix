@@ -16,6 +16,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyEmailSent, setVerifyEmailSent] = useState(false);
+  const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
 
   if (!open) return null;
 
@@ -27,6 +28,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
     if (!supabase) return;
     setLoading(true);
     setError(null);
+    setEmailAlreadyExists(false);
     try {
       if (mode === 'signup') {
         const { data, error: err } = await supabase.auth.signUp({
@@ -35,6 +37,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) throw err;
+        // Supabase returns empty identities array when email is already registered
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setEmailAlreadyExists(true);
+          return;
+        }
         if (data.session) {
           onClose();
         } else {
@@ -59,6 +66,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
         message: authErr?.message,
         raw: err,
       });
+      const msgLower = (authErr?.message || '').toLowerCase();
+      if (
+        authErr?.code === 'user_already_exists' ||
+        msgLower.includes('already registered') ||
+        msgLower.includes('already exists')
+      ) {
+        setEmailAlreadyExists(true);
+        return;
+      }
       const details = [
         authErr?.status ? `HTTP ${authErr.status}` : '',
         authErr?.code ? `[${authErr.code}]` : '',
@@ -106,6 +122,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
                 <code className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to{' '}
                 <code className="font-mono">.env.local</code> to enable Cloud Sync and OAuth.
               </p>
+            </div>
+          ) : emailAlreadyExists ? (
+            <div className="py-3 text-center space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <LogIn className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Email already exists
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  An account with <strong className="text-slate-900 dark:text-white">{email}</strong>{' '}
+                  is already registered. Please sign in instead.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmailAlreadyExists(false);
+                    setError(null);
+                  }}
+                  className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 font-medium"
+                >
+                  Use Another Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmailAlreadyExists(false);
+                    setMode('signin');
+                    setError(null);
+                  }}
+                  className="flex-1 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium"
+                >
+                  Go to Sign In
+                </button>
+              </div>
             </div>
           ) : verifyEmailSent ? (
             <div className="py-3 text-center space-y-4">

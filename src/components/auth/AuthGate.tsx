@@ -11,6 +11,7 @@ export const AuthGate: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyEmailSent, setVerifyEmailSent] = useState(false);
+  const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +19,7 @@ export const AuthGate: React.FC = () => {
     if (!supabase) return;
     setLoading(true);
     setError(null);
+    setEmailAlreadyExists(false);
 
     try {
       if (mode === 'signup') {
@@ -27,6 +29,10 @@ export const AuthGate: React.FC = () => {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) throw err;
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setEmailAlreadyExists(true);
+          return;
+        }
         if (!data.session) {
           setVerifyEmailSent(true);
         }
@@ -48,6 +54,15 @@ export const AuthGate: React.FC = () => {
         message: authErr?.message,
         raw: err,
       });
+      const msgLower = (authErr?.message || '').toLowerCase();
+      if (
+        authErr?.code === 'user_already_exists' ||
+        msgLower.includes('already registered') ||
+        msgLower.includes('already exists')
+      ) {
+        setEmailAlreadyExists(true);
+        return;
+      }
       const details = [
         authErr?.status ? `HTTP ${authErr.status}` : '',
         authErr?.code ? `[${authErr.code}]` : '',
@@ -78,7 +93,45 @@ export const AuthGate: React.FC = () => {
           </p>
         </div>
 
-        {verifyEmailSent ? (
+        {emailAlreadyExists ? (
+          <div className="py-2 text-center space-y-4 text-xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Mail className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="font-semibold text-sm text-slate-900 dark:text-white">
+                Email already exists
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                An account with <strong className="text-slate-900 dark:text-white">{email}</strong>{' '}
+                is already registered. Please sign in instead.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailAlreadyExists(false);
+                  setError(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 font-medium"
+              >
+                Use Another Email
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailAlreadyExists(false);
+                  setMode('signin');
+                  setError(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium"
+              >
+                Go to Sign In
+              </button>
+            </div>
+          </div>
+        ) : verifyEmailSent ? (
           <div className="py-2 text-center space-y-4 text-xs">
             <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
               <Mail className="w-6 h-6" />
