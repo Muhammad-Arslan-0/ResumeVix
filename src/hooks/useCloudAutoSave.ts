@@ -15,6 +15,7 @@ export function useCloudAutoSave() {
   const syncStatus = useResumeStore((s) => s.syncStatus);
 
   const setAuthUser = useResumeStore((s) => s.setAuthUser);
+  const setAuthChecking = useResumeStore((s) => s.setAuthChecking);
   const setSyncState = useResumeStore((s) => s.setSyncState);
   const loadCloudResume = useResumeStore((s) => s.loadCloudResume);
 
@@ -24,12 +25,16 @@ export function useCloudAutoSave() {
   // Hydrate Supabase Auth session & run guest-to-cloud migration on login
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    if (!supabase) {
+      setAuthChecking(false);
+      return;
+    }
 
     const handleSession = async (user: { id: string; email?: string; user_metadata?: Record<string, string> } | null) => {
       if (!user) {
         setAuthUser(null);
         setSyncState('guest', null);
+        setAuthChecking(false);
         return;
       }
 
@@ -59,6 +64,7 @@ export function useCloudAutoSave() {
           setSyncState('error');
         }
       }
+      setAuthChecking(false);
     };
 
     supabase.auth.getUser().then(({ data }) => handleSession(data.user));
@@ -70,7 +76,7 @@ export function useCloudAutoSave() {
     return () => {
       sub.subscription.unsubscribe();
     };
-  }, [setAuthUser, setSyncState, loadCloudResume]);
+  }, [setAuthUser, setAuthChecking, setSyncState, loadCloudResume]);
 
   // 1000ms debounced cloud auto-save
   useEffect(() => {

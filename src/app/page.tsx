@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FileText, Palette, Wand2 } from 'lucide-react';
+import { FileText, Loader2, Palette, Wand2 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { TopToolbar } from '@/components/toolbar/TopToolbar';
 import { ContentEditor } from '@/components/editor/ContentEditor';
@@ -10,11 +10,15 @@ import { DesignBySelfPanel } from '@/components/ai/DesignBySelfPanel';
 import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
 import { AISettingsModal } from '@/components/modals/AISettingsModal';
 import { AuthModal } from '@/components/modals/AuthModal';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 export default function ResumeVixWorkspace() {
   useCloudAutoSave();
 
+  const authUser = useResumeStore((s) => s.authUser);
+  const authChecking = useResumeStore((s) => s.authChecking);
   const editorTheme = useResumeStore((s) => s.editorTheme);
   const activeTab = useResumeStore((s) => s.activeTab);
   const setActiveTab = useResumeStore((s) => s.setActiveTab);
@@ -28,6 +32,18 @@ export default function ResumeVixWorkspace() {
     if (editorTheme === 'dark') root.classList.add('dark');
     else root.classList.remove('dark');
   }, [editorTheme]);
+
+  if (authChecking) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+      </div>
+    );
+  }
+
+  if (isSupabaseConfigured() && !authUser) {
+    return <AuthGate />;
+  }
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">

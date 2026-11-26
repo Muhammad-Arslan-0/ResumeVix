@@ -141,6 +141,14 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         )}
 
         <Link
+          href="/create"
+          title="Create New Resume"
+          className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <span>+ New</span>
+        </Link>
+
+        <Link
           href="/dashboard"
           title="My Resumes Dashboard"
           className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"

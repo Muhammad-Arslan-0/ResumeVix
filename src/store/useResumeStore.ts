@@ -44,12 +44,14 @@ interface ResumeStoreState {
 
   // Cloud Sync & Auth
   authUser: AuthUserSummary | null;
+  authChecking: boolean;
   activeResumeId: string | null;
   syncStatus: SyncStatus;
   lastSavedAt: string | null;
   hasLocalEdits: boolean;
 
   setAuthUser: (user: AuthUserSummary | null) => void;
+  setAuthChecking: (checking: boolean) => void;
   setSyncState: (status: SyncStatus, lastSavedAt?: string | null) => void;
   loadCloudResume: (id: string, resume: ResumeData, template: TemplateConfig) => void;
   markLocalDirty: () => void;
@@ -153,6 +155,7 @@ export const useResumeStore = create<ResumeStoreState>()(
       future: [],
 
       authUser: null,
+      authChecking: true,
       activeResumeId: null,
       syncStatus: 'guest',
       lastSavedAt: null,
@@ -165,6 +168,11 @@ export const useResumeStore = create<ResumeStoreState>()(
             state.activeResumeId = null;
             state.syncStatus = 'guest';
           }
+        }),
+
+      setAuthChecking: (checking) =>
+        set((state) => {
+          state.authChecking = checking;
         }),
 
       setSyncState: (status, lastSavedAt) =>

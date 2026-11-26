@@ -12,7 +12,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { AuthGate } from '@/components/auth/AuthGate';
 import {
   CloudResumeRecord,
   createCloudResume,
@@ -20,15 +22,16 @@ import {
   listCloudResumes,
   setCloudResumeArchived,
 } from '@/lib/sync/resumes';
-import { DEFAULT_TEMPLATE_CONFIG, TECH_RESUME_PRESET } from '@/data/presets';
 
 export default function DashboardPage() {
+  useCloudAutoSave();
+
   const router = useRouter();
   const authUser = useResumeStore((s) => s.authUser);
+  const authChecking = useResumeStore((s) => s.authChecking);
   const resume = useResumeStore((s) => s.resume);
   const template = useResumeStore((s) => s.template);
   const loadCloudResume = useResumeStore((s) => s.loadCloudResume);
-  const loadPreset = useResumeStore((s) => s.loadPreset);
 
   const [cloudResumes, setCloudResumes] = useState<CloudResumeRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,23 +53,6 @@ export default function DashboardPage() {
     refreshCloud();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser]);
-
-  const handleCreateNew = async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (supabase && authUser) {
-      const created = await createCloudResume(
-        supabase,
-        authUser.id,
-        { ...TECH_RESUME_PRESET, id: `resume-${Date.now()}`, title: 'New Resume' },
-        DEFAULT_TEMPLATE_CONFIG,
-        'New Resume'
-      );
-      loadCloudResume(created.id, created.resume_data, created.template_config);
-    } else {
-      loadPreset('tech');
-    }
-    router.push('/');
-  };
 
   const handleDuplicate = async (item: CloudResumeRecord) => {
     const supabase = getSupabaseBrowserClient();
@@ -94,6 +80,18 @@ export default function DashboardPage() {
     await deleteCloudResume(supabase, id);
     await refreshCloud();
   };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+      </div>
+    );
+  }
+
+  if (isSupabaseConfigured() && !authUser) {
+    return <AuthGate />;
+  }
 
   const visibleResumes = cloudResumes.filter((r) => (showArchived ? true : !r.is_archived));
 
@@ -129,14 +127,13 @@ export default function DashboardPage() {
                 <span>Show archived</span>
               </label>
             )}
-            <button
-              type="button"
-              onClick={handleCreateNew}
+            <Link
+              href="/create"
               className="inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white"
             >
               <FilePlus2 className="w-4 h-4" />
               <span>New Resume</span>
-            </button>
+            </Link>
           </div>
         </div>
 

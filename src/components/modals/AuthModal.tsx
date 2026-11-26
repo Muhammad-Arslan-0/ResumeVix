@@ -52,17 +52,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
     }
   };
 
-  const handleOAuth = async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    setError(null);
-    const { error: err } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (err) setError(err.message);
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -106,20 +95,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
                   Any edits made in Guest Mode will automatically sync to your cloud account on
                   sign-in.
                 </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOAuth}
-                className="w-full py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
-              >
-                Continue with Google
-              </button>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-                <span className="shrink mx-3 text-slate-400">or with email</span>
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
               </div>
 
               <form onSubmit={handleEmailAuth} className="space-y-3">
