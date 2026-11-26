@@ -8,17 +8,21 @@ interface SectionRendererProps {
   data: ResumeData;
   variant: TemplateDefinition['variant'];
   entryLayout?: TemplateDefinition['entryLayout'];
+  headingUppercase?: boolean;
   highlightAuthorName?: string;
 }
 
 function SectionHeading({
   title,
   variant,
+  uppercase = true,
 }: {
   title: string;
   variant: TemplateDefinition['variant'];
+  uppercase?: boolean;
 }) {
-  const baseClass = 'rv-section-heading break-after-avoid font-bold tracking-wide uppercase mb-1.5';
+  const caseClass = uppercase ? 'uppercase' : 'normal-case';
+  const baseClass = `rv-section-heading break-after-avoid font-bold tracking-wide ${caseClass} mb-1.5`;
   const styleHeading = { fontFamily: 'var(--rv-font-heading)' };
 
   if (variant === 'ats-minimal') {
@@ -67,7 +71,7 @@ function SectionHeading({
     return (
       <h2
         style={styleHeading}
-        className="rv-section-heading break-after-avoid font-bold tracking-wider uppercase text-center text-[0.95em] bg-slate-100 text-[var(--rv-text)] py-1 px-3 rounded-[2px] mb-2.5"
+        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center text-[0.95em] bg-slate-100 text-[var(--rv-text)] py-1 px-3 rounded-[2px] mb-2.5`}
       >
         {title}
       </h2>
@@ -85,7 +89,7 @@ function SectionHeading({
 }
 
 export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
-  ({ section, data, variant, entryLayout = 'stacked', highlightAuthorName }) => {
+  ({ section, data, variant, entryLayout = 'stacked', headingUppercase = true, highlightAuthorName }) => {
     if (!section.visible) return null;
 
     switch (section.type) {
@@ -93,7 +97,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (!data.summary.trim()) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            <SectionHeading title={section.title} variant={variant} uppercase={headingUppercase} />
             <p className="text-[0.96em] text-[var(--rv-text)] leading-relaxed">{data.summary}</p>
           </section>
         );

@@ -110,7 +110,7 @@ export default function ResumeVixWorkspace() {
               }`}
             >
               <Palette className="w-3.5 h-3.5" />
-              <span>Templates</span>
+              <span>Customize</span>
             </button>
             <button
               type="button"

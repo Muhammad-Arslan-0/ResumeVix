@@ -19,6 +19,20 @@ export interface TemplateStyleTokens {
   marginMm: number;
   sectionSpacingPx: number;
   density: DensityLevel;
+  // Granular Customize overrides
+  headingVariant?:
+    | 'auto'
+    | 'flowcv-banner'
+    | 'ats-minimal'
+    | 'academic-ruled'
+    | 'modern-accent'
+    | 'executive-bold'
+    | 'creative-pill';
+  headerStyleOverride?: 'auto' | 'icon-centered' | 'centered' | 'left' | 'split' | 'banner';
+  entryLayoutOverride?: 'auto' | 'stacked' | 'date-left-rail';
+  headingUppercase?: boolean;
+  showPageNumbers?: boolean;
+  footerText?: string;
 }
 
 export interface TemplateConfig {

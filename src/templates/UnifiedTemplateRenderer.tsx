@@ -42,15 +42,15 @@ function ContactLine({ data, centered = false }: { data: ResumeData; centered?: 
 
 function TemplateHeader({
   data,
-  meta,
+  headerStyle,
 }: {
   data: ResumeData;
-  meta: TemplateDefinition;
+  headerStyle: NonNullable<TemplateDefinition['headerStyle']>;
 }) {
   const headingStyle = { fontFamily: 'var(--rv-font-heading)' };
   const { profile } = data;
 
-  if (meta.headerStyle === 'banner') {
+  if (headerStyle === 'banner') {
     return (
       <header
         className="mb-4 p-4 rounded-sm text-white"
@@ -73,7 +73,7 @@ function TemplateHeader({
     );
   }
 
-  if (meta.headerStyle === 'icon-centered') {
+  if (headerStyle === 'icon-centered') {
     const contactChips = [
       profile.email ? { icon: Mail, text: profile.email } : null,
       profile.phone ? { icon: Phone, text: profile.phone } : null,
@@ -109,7 +109,7 @@ function TemplateHeader({
     );
   }
 
-  if (meta.headerStyle === 'centered') {
+  if (headerStyle === 'centered') {
     return (
       <header className="text-center border-b-2 border-[var(--rv-accent)] pb-3 mb-4">
         <h1 style={headingStyle} className="text-[1.85em] font-bold tracking-tight">
@@ -125,7 +125,7 @@ function TemplateHeader({
     );
   }
 
-  if (meta.headerStyle === 'split') {
+  if (headerStyle === 'split') {
     return (
       <header className="flex justify-between items-end border-b-2 border-[var(--rv-accent)] pb-3 mb-4 gap-4">
         <div>
@@ -174,6 +174,19 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
     .sort((a, b) => a.order - b.order);
 
   const highlightName = meta.category === 'academic' ? data.profile.fullName : undefined;
+  const effectiveVariant =
+    config.style.headingVariant && config.style.headingVariant !== 'auto'
+      ? config.style.headingVariant
+      : meta.variant;
+  const effectiveHeaderStyle =
+    config.style.headerStyleOverride && config.style.headerStyleOverride !== 'auto'
+      ? config.style.headerStyleOverride
+      : meta.headerStyle || 'left';
+  const effectiveEntryLayout =
+    config.style.entryLayoutOverride && config.style.entryLayoutOverride !== 'auto'
+      ? config.style.entryLayoutOverride
+      : meta.entryLayout || 'stacked';
+  const headingUppercase = config.style.headingUppercase ?? true;
 
   if (meta.layout === 'two-column-left' || meta.layout === 'two-column-right') {
     const sidebarSections: SectionConfig[] = [];
@@ -193,7 +206,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
 
     return (
       <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
-        <TemplateHeader data={data} meta={meta} />
+        <TemplateHeader data={data} headerStyle={effectiveHeaderStyle} />
         <div
           className="grid gap-5 items-start"
           style={{ gridTemplateColumns: meta.sidebarRatio || '32% 1fr' }}
@@ -206,8 +219,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     key={section.id}
                     section={section}
                     data={data}
-                    variant={meta.variant}
-                    entryLayout={meta.entryLayout}
+                    variant={effectiveVariant}
+                    entryLayout={effectiveEntryLayout}
+                    headingUppercase={headingUppercase}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -218,8 +232,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     key={section.id}
                     section={section}
                     data={data}
-                    variant={meta.variant}
-                    entryLayout={meta.entryLayout}
+                    variant={effectiveVariant}
+                    entryLayout={effectiveEntryLayout}
+                    headingUppercase={headingUppercase}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -233,8 +248,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     key={section.id}
                     section={section}
                     data={data}
-                    variant={meta.variant}
-                    entryLayout={meta.entryLayout}
+                    variant={effectiveVariant}
+                    entryLayout={effectiveEntryLayout}
+                    headingUppercase={headingUppercase}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -245,8 +261,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     key={section.id}
                     section={section}
                     data={data}
-                    variant={meta.variant}
-                    entryLayout={meta.entryLayout}
+                    variant={effectiveVariant}
+                    entryLayout={effectiveEntryLayout}
+                    headingUppercase={headingUppercase}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -254,6 +271,11 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
             </>
           )}
         </div>
+        {config.style.footerText && (
+          <footer className="mt-6 pt-2 border-t border-gray-200 text-center text-[0.8em] text-[var(--rv-muted)]">
+            {config.style.footerText}
+          </footer>
+        )}
       </PageShell>
     );
   }
@@ -261,19 +283,25 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
   // Single-column & banner-header
   return (
     <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
-      <TemplateHeader data={data} meta={meta} />
+      <TemplateHeader data={data} headerStyle={effectiveHeaderStyle} />
       <main className="flex flex-col gap-[var(--rv-section-gap)]">
         {orderedSections.map((section) => (
           <SectionRenderer
             key={section.id}
             section={section}
             data={data}
-            variant={meta.variant}
-            entryLayout={meta.entryLayout}
+            variant={effectiveVariant}
+            entryLayout={effectiveEntryLayout}
+            headingUppercase={headingUppercase}
             highlightAuthorName={highlightName}
           />
         ))}
       </main>
+      {config.style.footerText && (
+        <footer className="mt-6 pt-2 border-t border-gray-200 text-center text-[0.8em] text-[var(--rv-muted)]">
+          {config.style.footerText}
+        </footer>
+      )}
     </PageShell>
   );
 });
