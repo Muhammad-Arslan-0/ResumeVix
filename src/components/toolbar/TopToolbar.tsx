@@ -67,9 +67,11 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     <header className="no-print h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center font-bold text-sm">
-            R
-          </div>
+          <img
+            src="/icon.png"
+            alt="ResumeVix"
+            className="w-7 h-7 rounded-lg object-cover shadow-sm"
+          />
           <span className="font-semibold tracking-tight text-slate-900 dark:text-white hidden sm:inline">
             ResumeVix
           </span>
