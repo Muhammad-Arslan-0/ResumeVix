@@ -1,17 +1,47 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
-import { ResumeData, SectionConfig, TemplateConfig } from '@/types';
+import {
+  BookOpen,
+  Briefcase,
+  ExternalLink,
+  FolderGit2,
+  GraduationCap,
+  Layers,
+  Sparkles,
+  UserSquare2,
+} from 'lucide-react';
+import { ResumeData, SectionConfig, SectionType, TemplateConfig } from '@/types';
 import { TemplateDefinition } from '../registry';
 
 interface SectionRendererProps {
   section: SectionConfig;
   data: ResumeData;
-  variant: TemplateDefinition['variant'];
+  variant: TemplateDefinition['variant'] | 'double-rule' | 'short-underline' | 'plain';
   entryLayout?: TemplateDefinition['entryLayout'];
   headingUppercase?: boolean;
+  headingIconStyle?: 'none' | 'outline' | 'filled';
   dateFormat?: TemplateConfig['style']['dateFormat'];
+  entryConfig?: TemplateConfig['style']['entryConfig'];
   sectionCustomizations?: TemplateConfig['style']['sectionCustomizations'];
   highlightAuthorName?: string;
+}
+
+function getHeadingIcon(type: SectionType) {
+  switch (type) {
+    case 'summary':
+      return UserSquare2;
+    case 'experience':
+      return Briefcase;
+    case 'education':
+      return GraduationCap;
+    case 'publications':
+      return BookOpen;
+    case 'projects':
+      return FolderGit2;
+    case 'skills':
+      return Sparkles;
+    default:
+      return Layers;
+  }
 }
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -48,24 +78,49 @@ function formatResumeDate(
 
 function SectionHeading({
   title,
+  sectionType,
   variant,
   uppercase = true,
+  iconStyle = 'none',
 }: {
   title: string;
-  variant: TemplateDefinition['variant'];
+  sectionType?: SectionType;
+  variant: SectionRendererProps['variant'];
   uppercase?: boolean;
+  iconStyle?: 'none' | 'outline' | 'filled';
 }) {
   const caseClass = uppercase ? 'uppercase' : 'normal-case';
-  const baseClass = `rv-section-heading break-after-avoid font-bold tracking-wide ${caseClass} mb-1.5`;
-  const styleHeading = { fontFamily: 'var(--rv-font-heading)' };
+  const baseClass = `rv-section-heading break-after-avoid font-bold tracking-wide ${caseClass} mb-1.5 flex items-center gap-1.5`;
+  const styleHeading = {
+    fontFamily: 'var(--rv-font-heading)',
+    fontSize: 'var(--rv-section-heading-size)',
+  };
+
+  const IconComp = sectionType ? getHeadingIcon(sectionType) : null;
+  const iconNode =
+    IconComp && iconStyle !== 'none' ? (
+      <span
+        style={
+          iconStyle === 'filled'
+            ? { backgroundColor: 'var(--rv-heading-color)', color: '#ffffff' }
+            : { borderColor: 'var(--rv-heading-color)', color: 'var(--rv-heading-color)' }
+        }
+        className={`w-4 h-4 rounded-sm ${
+          iconStyle === 'filled' ? '' : 'border'
+        } inline-flex items-center justify-center shrink-0`}
+      >
+        <IconComp className="w-2.5 h-2.5" />
+      </span>
+    ) : null;
 
   if (variant === 'ats-minimal') {
     return (
       <h2
         style={styleHeading}
-        className={`${baseClass} text-[1.02em] border-b border-gray-300 pb-0.5 text-[var(--rv-text)]`}
+        className={`${baseClass} border-b border-gray-300 pb-0.5 text-[var(--rv-heading-color)]`}
       >
-        {title}
+        {iconNode}
+        <span>{title}</span>
       </h2>
     );
   }
@@ -73,9 +128,10 @@ function SectionHeading({
     return (
       <h2
         style={styleHeading}
-        className={`${baseClass} text-[1.05em] border-b-2 border-[var(--rv-accent)] pb-0.5 text-[var(--rv-accent)]`}
+        className={`${baseClass} border-b-2 border-[var(--rv-accent)] pb-0.5 text-[var(--rv-heading-color)]`}
       >
-        {title}
+        {iconNode}
+        <span>{title}</span>
       </h2>
     );
   }
@@ -83,9 +139,10 @@ function SectionHeading({
     return (
       <h2
         style={styleHeading}
-        className={`${baseClass} text-[1.08em] text-[var(--rv-accent)] border-l-4 border-[var(--rv-accent)] pl-2`}
+        className={`${baseClass} text-[var(--rv-heading-color)] border-l-4 border-[var(--rv-accent)] pl-2`}
       >
-        {title}
+        {iconNode}
+        <span>{title}</span>
       </h2>
     );
   }
@@ -94,9 +151,10 @@ function SectionHeading({
       <div className="break-after-avoid mb-2">
         <h2
           style={styleHeading}
-          className="inline-block text-[0.92em] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--rv-accent)] text-white"
+          className={`inline-flex items-center gap-1.5 font-bold ${caseClass} tracking-wider px-2 py-0.5 rounded bg-[var(--rv-accent)] text-white`}
         >
-          {title}
+          {iconNode}
+          <span>{title}</span>
         </h2>
       </div>
     );
@@ -107,11 +165,46 @@ function SectionHeading({
         style={{
           ...styleHeading,
           color: 'var(--rv-heading-color)',
-          fontSize: 'var(--rv-section-heading-size)',
         }}
-        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center bg-slate-100 py-1 px-3 rounded-[2px] mb-2.5`}
+        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} flex items-center justify-center gap-1.5 bg-slate-100 py-1 px-3 rounded-[2px] mb-2.5`}
       >
-        {title}
+        {iconNode}
+        <span>{title}</span>
+      </h2>
+    );
+  }
+  if (variant === 'double-rule') {
+    return (
+      <h2
+        style={{ ...styleHeading, color: 'var(--rv-heading-color)' }}
+        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} flex items-center justify-center gap-1.5 border-y border-gray-300 py-1 mb-2`}
+      >
+        {iconNode}
+        <span>{title}</span>
+      </h2>
+    );
+  }
+  if (variant === 'short-underline') {
+    return (
+      <div className="break-after-avoid mb-2">
+        <h2
+          style={{ ...styleHeading, color: 'var(--rv-heading-color)' }}
+          className={`font-bold tracking-wide ${caseClass} inline-flex items-center gap-1.5 border-b-2 border-[var(--rv-accent)] pb-0.5`}
+        >
+          {iconNode}
+          <span>{title}</span>
+        </h2>
+      </div>
+    );
+  }
+  if (variant === 'plain') {
+    return (
+      <h2
+        style={{ ...styleHeading, color: 'var(--rv-heading-color)' }}
+        className={`${baseClass}`}
+      >
+        {iconNode}
+        <span>{title}</span>
       </h2>
     );
   }
@@ -119,9 +212,10 @@ function SectionHeading({
   return (
     <h2
       style={styleHeading}
-      className={`${baseClass} text-[1.02em] text-[var(--rv-accent)] border-b border-gray-200 pb-0.5`}
+      className={`${baseClass} text-[var(--rv-heading-color)] border-b border-gray-200 pb-0.5`}
     >
-      {title}
+      {iconNode}
+      <span>{title}</span>
     </h2>
   );
 }
@@ -133,15 +227,33 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
     variant,
     entryLayout = 'stacked',
     headingUppercase = true,
+    headingIconStyle = 'none',
     dateFormat = 'YYYY/MM',
+    entryConfig,
     sectionCustomizations,
     highlightAuthorName,
   }) => {
     if (!section.visible) return null;
     const sc = sectionCustomizations || {};
+    const ec = entryConfig || {};
+    const useColumns =
+      ec.structure ? ec.structure === 'columns' : entryLayout === 'date-left-rail';
+    const datePos = ec.datePosition || 'left';
+    const subtitleBelow = ec.subtitlePlacement === 'below';
+    const entryTitleBold = ec.titleBold ?? true;
+    const entrySubtitleItalic = ec.subtitleItalic ?? true;
     const expCompanyFirst = sc.experienceTitleOrder === 'company-first';
     const eduSchoolFirst = sc.educationTitleOrder === 'school-first';
     const showSummaryHeading = sc.showSummaryHeading ?? true;
+    const renderHeading = () => (
+      <SectionHeading
+        title={section.title}
+        sectionType={section.type}
+        variant={variant}
+        uppercase={headingUppercase}
+        iconStyle={headingIconStyle}
+      />
+    );
 
     switch (section.type) {
       case 'page_break':
@@ -151,13 +263,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (!data.summary.trim()) return null;
         return (
           <section className="rv-section">
-            {showSummaryHeading && (
-              <SectionHeading
-                title={section.title}
-                variant={variant}
-                uppercase={headingUppercase}
-              />
-            )}
+            {showSummaryHeading && renderHeading()}
             <p className="text-[0.96em] text-[var(--rv-text)] leading-relaxed">{data.summary}</p>
           </section>
         );
@@ -168,71 +274,110 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (visibleItems.length === 0) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             <div className="flex flex-col gap-3">
-              {visibleItems.map((item) =>
-                entryLayout === 'date-left-rail' ? (
-                  <article
-                    key={item.id}
-                    className="rv-entry break-inside-avoid grid grid-cols-[24%_1fr] gap-4 items-start"
-                  >
-                    <div className="text-[0.88em] text-[var(--rv-muted)] leading-snug">
-                      <div>
-                        {formatResumeDate(item.startDate, dateFormat)} –{' '}
-                        {item.current ? 'Present' : formatResumeDate(item.endDate, dateFormat)}
-                      </div>
+              {visibleItems.map((item) => {
+                const dateStr = `${formatResumeDate(item.startDate, dateFormat)} – ${
+                  item.current ? 'Present' : formatResumeDate(item.endDate, dateFormat)
+                }`;
+                const titleText = expCompanyFirst ? item.company : item.role;
+                const subText = expCompanyFirst ? item.role : item.company;
+
+                const titleBlock = (
+                  <div style={{ fontSize: 'var(--rv-entry-header-size)' }}>
+                    <span className={entryTitleBold ? 'font-bold' : 'font-normal'}>
+                      {titleText}
+                    </span>
+                    {subText &&
+                      (subtitleBelow ? (
+                        <div
+                          style={{ color: 'var(--rv-entry-subtitle-color)' }}
+                          className={`text-[0.94em] ${entrySubtitleItalic ? 'italic' : ''}`}
+                        >
+                          {subText}
+                        </div>
+                      ) : (
+                        <span
+                          style={{ color: 'var(--rv-entry-subtitle-color)' }}
+                          className={entrySubtitleItalic ? 'italic' : ''}
+                        >
+                          , {subText}
+                        </span>
+                      ))}
+                  </div>
+                );
+
+                const bulletsBlock = item.bullets.length > 0 && (
+                  <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[0.94em]">
+                    {item.bullets.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                );
+
+                if (useColumns) {
+                  const dateCol = (
+                    <div
+                      style={{ color: 'var(--rv-date-color)' }}
+                      className={`text-[0.88em] leading-snug ${
+                        datePos === 'right' ? 'text-right' : ''
+                      }`}
+                    >
+                      <div>{dateStr}</div>
                       {item.location && <div className="mt-0.5">{item.location}</div>}
                     </div>
-                    <div>
-                      <div style={{ fontSize: 'var(--rv-entry-header-size)' }}>
-                        {expCompanyFirst ? (
-                          <>
-                            <span className="font-bold">{item.company}</span>
-                            {item.role && <span className="italic">, {item.role}</span>}
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-bold">{item.role}</span>
-                            {item.company && <span className="italic">, {item.company}</span>}
-                          </>
-                        )}
-                      </div>
-                      {item.bullets.length > 0 && (
-                        <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[0.94em]">
-                          {item.bullets.map((b, i) => (
-                            <li key={i}>{b}</li>
-                          ))}
-                        </ul>
+                  );
+
+                  return (
+                    <article
+                      key={item.id}
+                      className={`rv-entry break-inside-avoid grid gap-4 items-start ${
+                        datePos === 'right'
+                          ? 'grid-cols-[1fr_24%]'
+                          : 'grid-cols-[24%_1fr]'
+                      }`}
+                    >
+                      {datePos === 'right' ? (
+                        <>
+                          <div>
+                            {titleBlock}
+                            {bulletsBlock}
+                          </div>
+                          {dateCol}
+                        </>
+                      ) : (
+                        <>
+                          {dateCol}
+                          <div>
+                            {titleBlock}
+                            {bulletsBlock}
+                          </div>
+                        </>
                       )}
-                    </div>
-                  </article>
-                ) : (
+                    </article>
+                  );
+                }
+
+                return (
                   <article key={item.id} className="rv-entry break-inside-avoid">
                     <div className="flex justify-between items-baseline gap-2">
-                      <div>
-                        <span className="font-semibold text-[1em]">{item.role}</span>
-                        {item.company && (
-                          <span className="text-[var(--rv-muted)]"> — {item.company}</span>
-                        )}
-                      </div>
-                      <span className="text-[0.88em] text-[var(--rv-muted)] whitespace-nowrap">
-                        {formatResumeDate(item.startDate, dateFormat)} –{' '}
-                        {item.current ? 'Present' : formatResumeDate(item.endDate, dateFormat)}
+                      {titleBlock}
+                      <span
+                        style={{ color: 'var(--rv-date-color)' }}
+                        className="text-[0.88em] whitespace-nowrap"
+                      >
+                        {dateStr}
                       </span>
                     </div>
                     {item.location && (
-                      <div className="text-[0.86em] text-[var(--rv-muted)]">{item.location}</div>
+                      <div style={{ color: 'var(--rv-date-color)' }} className="text-[0.86em]">
+                        {item.location}
+                      </div>
                     )}
-                    {item.bullets.length > 0 && (
-                      <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[0.95em]">
-                        {item.bullets.map((b, i) => (
-                          <li key={i}>{b}</li>
-                        ))}
-                      </ul>
-                    )}
+                    {bulletsBlock}
                   </article>
-                )
-              )}
+                );
+              })}
             </div>
           </section>
         );
@@ -243,7 +388,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (visibleItems.length === 0) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             <div className="flex flex-col gap-2.5">
               {visibleItems.map((item) =>
                 entryLayout === 'date-left-rail' ? (
@@ -332,7 +477,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         const normalizedMe = highlightAuthorName?.toLowerCase().replace(/^dr\.\s*/i, '').replace(/,.*$/, '').trim();
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             <ol className="list-decimal pl-4 space-y-1.5 text-[0.94em]">
               {visibleItems.map((pub) => (
                 <li key={pub.id} className="rv-entry break-inside-avoid">
@@ -368,7 +513,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (visibleItems.length === 0) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             <div className="flex flex-col gap-2.5">
               {visibleItems.map((proj) => (
                 <article key={proj.id} className="rv-entry break-inside-avoid">
@@ -437,7 +582,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
 
         return (
           <section className="rv-section break-inside-avoid">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             {effectiveSkillsLayout === 'grid' ? (
               <div className={`grid ${gridColsClass} gap-x-5 gap-y-2.5 text-[0.93em]`}>
                 {visibleItems.map((grp) => (
@@ -490,7 +635,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (visibleEntries.length === 0) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} />
+            {renderHeading()}
             <div className="flex flex-col gap-2">
               {visibleEntries.map((entry) => (
                 <article key={entry.id} className="rv-entry break-inside-avoid">

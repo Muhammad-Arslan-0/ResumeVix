@@ -12,12 +12,16 @@ export interface SectionConfig {
 export interface TemplateStyleTokens {
   fontFamily: string;
   headingFontFamily?: string;
+  nameFontFamily?: string;
+  fallbackFontFamily?: string;
   fontSizePt: number;
   lineHeight: number;
   accentColor: string;
   textColor: string;
   mutedColor: string;
   marginMm: number;
+  marginXMm?: number;
+  marginYMm?: number;
   sectionSpacingPx: number;
   density: DensityLevel;
   // Granular Customize overrides
@@ -28,7 +32,11 @@ export interface TemplateStyleTokens {
     | 'academic-ruled'
     | 'modern-accent'
     | 'executive-bold'
-    | 'creative-pill';
+    | 'creative-pill'
+    | 'double-rule'
+    | 'short-underline'
+    | 'plain';
+  headingIconStyle?: 'none' | 'outline' | 'filled';
   headerStyleOverride?: 'auto' | 'icon-centered' | 'centered' | 'left' | 'split' | 'banner';
   entryLayoutOverride?: 'auto' | 'stacked' | 'date-left-rail';
   columnLayoutOverride?: 'auto' | 'one' | 'two' | 'mix';
@@ -86,6 +94,13 @@ export interface TemplateStyleTokens {
     titlePt?: number;
     sectionHeadingPt?: number;
     entryHeaderPt?: number;
+  };
+  entryConfig?: {
+    structure?: 'full-width' | 'columns';
+    datePosition?: 'left' | 'right' | 'split';
+    subtitlePlacement?: 'same-line' | 'below';
+    titleBold?: boolean;
+    subtitleItalic?: boolean;
   };
 }
 

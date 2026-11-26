@@ -17,6 +17,9 @@ export const CURATED_FONTS: FontOption[] = [
   { name: 'Crimson Pro', category: 'serif', googleParam: 'Crimson+Pro:wght@400;600;700' },
   { name: 'Playfair Display', category: 'serif', googleParam: 'Playfair+Display:wght@600;700' },
   { name: 'JetBrains Mono', category: 'mono', googleParam: 'JetBrains+Mono:wght@400;600' },
+  { name: 'IBM Plex Sans Arabic', category: 'sans', googleParam: 'IBM+Plex+Sans+Arabic:wght@400;500;600;700' },
+  { name: 'Cairo', category: 'sans', googleParam: 'Cairo:wght@400;600;700' },
+  { name: 'Noto Sans Arabic', category: 'sans', googleParam: 'Noto+Sans+Arabic:wght@400;600;700' },
 ];
 
 export const ACCENT_PALETTES = [

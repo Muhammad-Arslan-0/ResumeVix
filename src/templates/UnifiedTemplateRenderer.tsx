@@ -131,6 +131,7 @@ function TemplateHeader({
           <h1
             style={{
               ...headingStyle,
+              fontFamily: 'var(--rv-font-name)',
               color: 'var(--rv-name-color)',
               fontSize: 'var(--rv-name-size)',
             }}
@@ -311,7 +312,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    headingIconStyle={config.style.headingIconStyle}
                     dateFormat={config.style.dateFormat}
+                    entryConfig={config.style.entryConfig}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -326,7 +329,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    headingIconStyle={config.style.headingIconStyle}
                     dateFormat={config.style.dateFormat}
+                    entryConfig={config.style.entryConfig}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -344,7 +349,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    headingIconStyle={config.style.headingIconStyle}
                     dateFormat={config.style.dateFormat}
+                    entryConfig={config.style.entryConfig}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -359,7 +366,9 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    headingIconStyle={config.style.headingIconStyle}
                     dateFormat={config.style.dateFormat}
+                    entryConfig={config.style.entryConfig}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />

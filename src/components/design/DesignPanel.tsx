@@ -115,6 +115,7 @@ export const DesignPanel: React.FC = () => {
   const [category, setCategory] = useState<TemplateCategory | 'all'>('all');
   const [headerAdvancedOpen, setHeaderAdvancedOpen] = useState(false);
   const [footerAdvancedOpen, setFooterAdvancedOpen] = useState(false);
+  const [entryAdvancedOpen, setEntryAdvancedOpen] = useState(false);
   const [focusedFooterCol, setFocusedFooterCol] = useState<'leftText' | 'centerText' | 'rightText'>(
     'leftText'
   );
@@ -438,31 +439,177 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'entries' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
             <h3 className="font-semibold text-sm">Entry Layout</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {[
-                { id: 'auto', label: 'Template Default' },
-                { id: 'date-left-rail', label: '2-Column (Date & Location Left Rail)' },
-                { id: 'stacked', label: 'Stacked (Title & Date Inline)' },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() =>
-                    updateStyleConfig({
-                      entryLayoutOverride: opt.id as 'auto' | 'date-left-rail' | 'stacked',
-                    })
-                  }
-                  className={`text-left px-3 py-2 rounded-lg border ${
-                    (template.style.entryLayoutOverride || 'auto') === opt.id
-                      ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 font-medium'
-                      : 'border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+
+            {/* Structure: Full Width | Columns */}
+            <div className="space-y-2">
+              <div className="font-semibold">Structure</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'full-width', label: 'Full Width' },
+                    { id: 'columns', label: 'Columns' },
+                  ] as const
+                ).map((st) => {
+                  const active = (template.style.entryConfig?.structure || 'columns') === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          entryConfig: { ...template.style.entryConfig, structure: st.id },
+                          entryLayoutOverride: st.id === 'columns' ? 'date-left-rail' : 'stacked',
+                        })
+                      }
+                      className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <div className="w-8 h-5 flex gap-1 items-center justify-center">
+                        {st.id === 'full-width' ? (
+                          <div className="w-full space-y-1">
+                            <div className="h-1 bg-current/40 rounded" />
+                            <div className="h-1 bg-current/25 rounded" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-1/3 h-full bg-current/35 rounded-[1px]" />
+                            <div className="w-2/3 h-full bg-current/20 rounded-[1px]" />
+                          </>
+                        )}
+                      </div>
+                      <span>{st.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Date & Location Position */}
+            <div className="space-y-2">
+              <div className="font-semibold">Date & Location Position</div>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: 'right', label: 'Right' },
+                    { id: 'left', label: 'Left' },
+                    { id: 'split', label: 'Split' },
+                  ] as const
+                ).map((pos) => {
+                  const active = (template.style.entryConfig?.datePosition || 'left') === pos.id;
+                  return (
+                    <button
+                      key={pos.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          entryConfig: { ...template.style.entryConfig, datePosition: pos.id },
+                        })
+                      }
+                      className={`py-2 px-2 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {pos.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Subtitle Placement */}
+            <div className="space-y-2">
+              <div className="font-semibold">Subtitle Placement</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'same-line', label: 'Try Same Line' },
+                    { id: 'below', label: 'Below Title' },
+                  ] as const
+                ).map((sub) => {
+                  const active =
+                    (template.style.entryConfig?.subtitlePlacement || 'same-line') === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          entryConfig: {
+                            ...template.style.entryConfig,
+                            subtitlePlacement: sub.id,
+                          },
+                        })
+                      }
+                      className={`py-2 px-2 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Advanced Settings */}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setEntryAdvancedOpen((v) => !v)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between font-medium text-slate-700 dark:text-slate-200"
+              >
+                <span>Advanced settings</span>
+                {entryAdvancedOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              {entryAdvancedOpen && (
+                <div className="p-3.5 pt-2 space-y-2.5 border-t border-slate-200 dark:border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={template.style.entryConfig?.titleBold ?? true}
+                      onChange={(e) =>
+                        updateStyleConfig({
+                          entryConfig: {
+                            ...template.style.entryConfig,
+                            titleBold: e.target.checked,
+                          },
+                        })
+                      }
+                      className="accent-teal-600 rounded"
+                    />
+                    <span>Bold entry title</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={template.style.entryConfig?.subtitleItalic ?? true}
+                      onChange={(e) =>
+                        updateStyleConfig({
+                          entryConfig: {
+                            ...template.style.entryConfig,
+                            subtitleItalic: e.target.checked,
+                          },
+                        })
+                      }
+                      className="accent-teal-600 rounded"
+                    />
+                    <span>Italic entry subtitle</span>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -599,80 +746,306 @@ export const DesignPanel: React.FC = () => {
 
         {activeNav === 'spacing' && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
-            <h3 className="font-semibold text-sm">Margins & Spacing</h3>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Page Margins</span>
-                <span className="font-mono">{template.style.marginMm}mm</span>
+            <h3 className="font-semibold text-sm">Spacing</h3>
+
+            {/* Line Height */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Line Height</span>
+                <span className="font-mono text-slate-600 dark:text-slate-300">
+                  {template.style.lineHeight}
+                </span>
               </div>
-              <input
-                type="range"
-                min={8}
-                max={24}
-                step={1}
-                value={template.style.marginMm}
-                onChange={(e) => updateStyleConfig({ marginMm: parseInt(e.target.value, 10) })}
-                className="w-full accent-teal-600"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Section Spacing</span>
-                <span className="font-mono">{template.style.sectionSpacingPx}px</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={1.15}
+                  max={1.7}
+                  step={0.05}
+                  value={template.style.lineHeight}
+                  onChange={(e) => updateStyleConfig({ lineHeight: parseFloat(e.target.value) })}
+                  className="flex-1 accent-teal-600"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      lineHeight: Math.max(1.15, +(template.style.lineHeight - 0.05).toFixed(2)),
+                    })
+                  }
+                  aria-label="Decrease line height"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      lineHeight: Math.min(1.7, +(template.style.lineHeight + 0.05).toFixed(2)),
+                    })
+                  }
+                  aria-label="Increase line height"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  +
+                </button>
               </div>
-              <input
-                type="range"
-                min={6}
-                max={26}
-                step={2}
-                value={template.style.sectionSpacingPx}
-                onChange={(e) =>
-                  updateStyleConfig({ sectionSpacingPx: parseInt(e.target.value, 10) })
-                }
-                className="w-full accent-teal-600"
-              />
             </div>
+
+            {/* Space Between Elements */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Space Between Elements</span>
+                <span className="font-mono text-slate-600 dark:text-slate-300">
+                  {template.style.sectionSpacingPx}px
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={6}
+                  max={26}
+                  step={2}
+                  value={template.style.sectionSpacingPx}
+                  onChange={(e) =>
+                    updateStyleConfig({ sectionSpacingPx: parseInt(e.target.value, 10) })
+                  }
+                  className="flex-1 accent-teal-600"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      sectionSpacingPx: Math.max(6, template.style.sectionSpacingPx - 2),
+                    })
+                  }
+                  aria-label="Decrease element spacing"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      sectionSpacingPx: Math.min(26, template.style.sectionSpacingPx + 2),
+                    })
+                  }
+                  aria-label="Increase element spacing"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Left & Right Margin */}
+            {(() => {
+              const mx = template.style.marginXMm ?? template.style.marginMm;
+              const my = template.style.marginYMm ?? template.style.marginMm;
+              return (
+                <>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Left & Right Margin</span>
+                      <span className="font-mono text-slate-600 dark:text-slate-300">{mx}mm</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={8}
+                        max={24}
+                        step={1}
+                        value={mx}
+                        onChange={(e) =>
+                          updateStyleConfig({ marginXMm: parseInt(e.target.value, 10) })
+                        }
+                        className="flex-1 accent-teal-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateStyleConfig({ marginXMm: Math.max(8, mx - 1) })}
+                        aria-label="Decrease left and right margin"
+                        className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateStyleConfig({ marginXMm: Math.min(24, mx + 1) })}
+                        aria-label="Increase left and right margin"
+                        className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Top & Bottom Margin */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Top & Bottom Margin</span>
+                      <span className="font-mono text-slate-600 dark:text-slate-300">{my}mm</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={8}
+                        max={24}
+                        step={1}
+                        value={my}
+                        onChange={(e) =>
+                          updateStyleConfig({ marginYMm: parseInt(e.target.value, 10) })
+                        }
+                        className="flex-1 accent-teal-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateStyleConfig({ marginYMm: Math.max(8, my - 1) })}
+                        aria-label="Decrease top and bottom margin"
+                        className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateStyleConfig({ marginYMm: Math.min(24, my + 1) })}
+                        aria-label="Increase top and bottom margin"
+                        className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
         {activeNav === 'headings' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
             <h3 className="font-semibold text-sm">Section Headings</h3>
-            <select
-              value={template.style.headingVariant || 'auto'}
-              onChange={(e) =>
-                updateStyleConfig({
-                  headingVariant: e.target.value as NonNullable<
-                    typeof template.style.headingVariant
-                  >,
-                })
-              }
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
-            >
-              <option value="auto">Template Default</option>
-              <option value="flowcv-banner">Tinted Banner Bar (FlowCV Style)</option>
-              <option value="ats-minimal">Classic Bottom Rule</option>
-              <option value="academic-ruled">Accent Bottom Rule</option>
-              <option value="executive-bold">Bold Left Accent Bar</option>
-              <option value="creative-pill">Accent Pill Badge</option>
-            </select>
-            <label className="flex items-center gap-2 pt-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={template.style.headingUppercase ?? true}
-                onChange={(e) => updateStyleConfig({ headingUppercase: e.target.checked })}
-                className="accent-teal-600"
-              />
-              <span>Uppercase Section Headings</span>
-            </label>
+
+            {/* 8 Visual Style Cards (4x2 grid) */}
+            <div className="space-y-2">
+              <div className="font-semibold">Style</div>
+              <div className="grid grid-cols-4 gap-2">
+                {(
+                  [
+                    { id: 'ats-minimal', label: 'Bottom Rule' },
+                    { id: 'flowcv-banner', label: 'Banner' },
+                    { id: 'modern-accent', label: 'Accent Rule' },
+                    { id: 'double-rule', label: 'Double Rule' },
+                    { id: 'short-underline', label: 'Short Bar' },
+                    { id: 'plain', label: 'Plain' },
+                    { id: 'academic-ruled', label: 'Academic' },
+                    { id: 'executive-bold', label: 'Left Bar' },
+                  ] as const
+                ).map((st) => {
+                  const active =
+                    (template.style.headingVariant || 'flowcv-banner') === st.id ||
+                    (template.style.headingVariant === 'auto' && st.id === 'flowcv-banner');
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      title={st.label}
+                      onClick={() => updateStyleConfig({ headingVariant: st.id })}
+                      className={`h-11 rounded-xl border px-2 flex flex-col items-center justify-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div
+                        className={`w-full h-3 rounded-[2px] flex items-center ${
+                          st.id === 'flowcv-banner'
+                            ? 'bg-current/20 justify-center'
+                            : st.id === 'double-rule'
+                              ? 'border-y border-current/50 justify-center'
+                              : st.id === 'executive-bold'
+                                ? 'border-l-4 border-current pl-1'
+                                : st.id === 'ats-minimal' || st.id === 'academic-ruled'
+                                  ? 'border-b border-current/60'
+                                  : ''
+                        }`}
+                      >
+                        <div className="w-6 h-1 bg-current/70 rounded-full" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Capitalization */}
+            <div className="space-y-2">
+              <div className="font-semibold">Capitalization</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { upper: false, label: 'Capitalize' },
+                    { upper: true, label: 'Uppercase' },
+                  ] as const
+                ).map((cap) => {
+                  const active = (template.style.headingUppercase ?? true) === cap.upper;
+                  return (
+                    <button
+                      key={cap.label}
+                      type="button"
+                      onClick={() => updateStyleConfig({ headingUppercase: cap.upper })}
+                      className={`py-2 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {cap.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Icons */}
+            <div className="space-y-2">
+              <div className="font-semibold">Icons</div>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: 'none', label: 'None' },
+                    { id: 'outline', label: 'Outline' },
+                    { id: 'filled', label: 'Filled' },
+                  ] as const
+                ).map((ic) => {
+                  const active = (template.style.headingIconStyle || 'none') === ic.id;
+                  return (
+                    <button
+                      key={ic.id}
+                      type="button"
+                      onClick={() => updateStyleConfig({ headingIconStyle: ic.id })}
+                      className={`py-2 rounded-xl border text-center transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {ic.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
         {activeNav === 'font' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-            <h3 className="font-semibold text-sm">Typography</h3>
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+            <h3 className="font-semibold text-sm">Font</h3>
             <div>
-              <label className="block font-medium mb-1">Body Font</label>
+              <label className="block font-semibold mb-1">Body Font (Latin)</label>
               <select
                 value={template.style.fontFamily}
                 onChange={(e) => updateStyleConfig({ fontFamily: e.target.value })}
@@ -686,17 +1059,52 @@ export const DesignPanel: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block font-medium mb-1">Heading Font</label>
+              <label className="block font-semibold mb-1">Heading Font</label>
               <select
-                value={template.style.headingFontFamily || template.style.fontFamily}
-                onChange={(e) => updateStyleConfig({ headingFontFamily: e.target.value })}
+                value={template.style.headingFontFamily || ''}
+                onChange={(e) =>
+                  updateStyleConfig({ headingFontFamily: e.target.value || undefined })
+                }
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
               >
+                <option value="">Same as body font</option>
                 {CURATED_FONTS.map((f) => (
                   <option key={f.name} value={f.name}>
                     {f.name} ({f.category})
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Name Font</label>
+              <select
+                value={template.style.nameFontFamily || ''}
+                onChange={(e) =>
+                  updateStyleConfig({ nameFontFamily: e.target.value || undefined })
+                }
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
+              >
+                <option value="">Same as body font</option>
+                {CURATED_FONTS.map((f) => (
+                  <option key={f.name} value={f.name}>
+                    {f.name} ({f.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Secondary / Arabic Script Fallback</label>
+              <select
+                value={template.style.fallbackFontFamily || ''}
+                onChange={(e) =>
+                  updateStyleConfig({ fallbackFontFamily: e.target.value || undefined })
+                }
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
+              >
+                <option value="">None</option>
+                <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
+                <option value="Cairo">Cairo</option>
+                <option value="Noto Sans Arabic">Noto Sans Arabic</option>
               </select>
             </div>
           </div>

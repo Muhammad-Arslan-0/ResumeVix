@@ -18,15 +18,19 @@ export const PageShell: React.FC<PageShellProps> = ({
   const widthMm = pageSize === 'A4' ? '210mm' : '215.9mm';
   const minHeightMm = pageSize === 'A4' ? '297mm' : '279.4mm';
 
+  const fallbackSuffix = style.fallbackFontFamily ? `, '${style.fallbackFontFamily}'` : '';
   const cssVars = {
-    '--rv-font-body': `'${style.fontFamily}', system-ui, -apple-system, sans-serif`,
-    '--rv-font-heading': `'${style.headingFontFamily || style.fontFamily}', system-ui, -apple-system, sans-serif`,
+    '--rv-font-body': `'${style.fontFamily}'${fallbackSuffix}, system-ui, -apple-system, sans-serif`,
+    '--rv-font-heading': `'${style.headingFontFamily || style.fontFamily}'${fallbackSuffix}, system-ui, -apple-system, sans-serif`,
+    '--rv-font-name': `'${style.nameFontFamily || style.headingFontFamily || style.fontFamily}'${fallbackSuffix}, system-ui, -apple-system, sans-serif`,
     '--rv-font-size': `${style.fontSizePt}pt`,
     '--rv-line-height': `${style.lineHeight}`,
     '--rv-accent': style.accentColor,
     '--rv-text': style.textColor,
     '--rv-muted': style.mutedColor,
     '--rv-margin-mm': `${style.marginMm}mm`,
+    '--rv-margin-x': `${style.marginXMm ?? style.marginMm}mm`,
+    '--rv-margin-y': `${style.marginYMm ?? style.marginMm}mm`,
     '--rv-section-gap': `${style.sectionSpacingPx}px`,
     '--rv-name-color': style.accentTargets?.name ? style.accentColor : style.textColor,
     '--rv-title-color': style.accentTargets?.jobTitle ? style.accentColor : style.textColor,
@@ -74,7 +78,7 @@ export const PageShell: React.FC<PageShellProps> = ({
         ...surfaceStyle,
         width: widthMm,
         minHeight: minHeightMm,
-        padding: 'var(--rv-margin-mm)',
+        padding: 'var(--rv-margin-y) var(--rv-margin-x)',
         fontFamily: 'var(--rv-font-body)',
         fontSize: 'var(--rv-font-size)',
         lineHeight: 'var(--rv-line-height)',

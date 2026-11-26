@@ -29,11 +29,15 @@ export const PreviewCanvas: React.FC = () => {
   const fontsHref = buildGoogleFontsHref([
     deferredTemplate.style.fontFamily,
     deferredTemplate.style.headingFontFamily || '',
+    deferredTemplate.style.nameFontFamily || '',
+    deferredTemplate.style.fallbackFontFamily || '',
   ]);
 
   const pageH = PAGE_HEIGHT_PX[deferredTemplate.pageSize];
-  const marginPx = deferredTemplate.style.marginMm * PX_PER_MM;
-  const contentPerPagePx = Math.max(200, pageH - marginPx * 2);
+  const marginXMm = deferredTemplate.style.marginXMm ?? deferredTemplate.style.marginMm;
+  const marginYMm = deferredTemplate.style.marginYMm ?? deferredTemplate.style.marginMm;
+  const marginYPx = marginYMm * PX_PER_MM;
+  const contentPerPagePx = Math.max(200, pageH - marginYPx * 2);
   const widthMm = deferredTemplate.pageSize === 'A4' ? '210mm' : '215.9mm';
 
   useEffect(() => {
@@ -97,7 +101,7 @@ export const PreviewCanvas: React.FC = () => {
         aria-hidden="true"
         className="no-print fixed -left-[9999px] top-0 pointer-events-none opacity-0"
         style={{
-          width: `calc(${widthMm} - ${deferredTemplate.style.marginMm * 2}mm)`,
+          width: `calc(${widthMm} - ${marginXMm * 2}mm)`,
         }}
       >
         <div ref={measureRef}>
@@ -147,7 +151,7 @@ export const PreviewCanvas: React.FC = () => {
                 style={{
                   width: widthMm,
                   height: `${pageH}px`,
-                  padding: `${deferredTemplate.style.marginMm}mm`,
+                  padding: `${marginYMm}mm ${marginXMm}mm`,
                 }}
               >
                 <div
@@ -171,8 +175,8 @@ export const PreviewCanvas: React.FC = () => {
                   <div
                     className="absolute left-0 right-0 bottom-2 grid grid-cols-3 items-center text-[10px] text-slate-500"
                     style={{
-                      paddingLeft: `${deferredTemplate.style.marginMm}mm`,
-                      paddingRight: `${deferredTemplate.style.marginMm}mm`,
+                      paddingLeft: `${marginXMm}mm`,
+                      paddingRight: `${marginXMm}mm`,
                       fontFamily: `'${deferredTemplate.style.fontFamily}', sans-serif`,
                     }}
                   >
