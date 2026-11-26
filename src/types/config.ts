@@ -6,6 +6,7 @@ export interface SectionConfig {
   title: string;
   visible: boolean;
   order: number;
+  column?: 'main' | 'sidebar';
 }
 
 export interface TemplateStyleTokens {
@@ -30,6 +31,7 @@ export interface TemplateStyleTokens {
     | 'creative-pill';
   headerStyleOverride?: 'auto' | 'icon-centered' | 'centered' | 'left' | 'split' | 'banner';
   entryLayoutOverride?: 'auto' | 'stacked' | 'date-left-rail';
+  columnLayoutOverride?: 'auto' | 'one' | 'two' | 'mix';
   headingUppercase?: boolean;
   showPageNumbers?: boolean;
   footerText?: string;

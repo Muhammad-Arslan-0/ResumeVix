@@ -187,13 +187,25 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
       ? config.style.entryLayoutOverride
       : meta.entryLayout || 'stacked';
   const headingUppercase = config.style.headingUppercase ?? true;
+  const colOverride = config.style.columnLayoutOverride;
+  const isTwoCol =
+    colOverride === 'two' || colOverride === 'mix'
+      ? true
+      : colOverride === 'one'
+        ? false
+        : meta.layout === 'two-column-left' || meta.layout === 'two-column-right';
 
-  if (meta.layout === 'two-column-left' || meta.layout === 'two-column-right') {
+  if (isTwoCol) {
     const sidebarSections: SectionConfig[] = [];
     const mainSections: SectionConfig[] = [];
 
     for (const sec of orderedSections) {
-      if (SIDEBAR_SECTION_TYPES.has(sec.type) && meta.category !== 'academic') {
+      if (sec.type === 'page_break') continue;
+      if (sec.column === 'sidebar') {
+        sidebarSections.push(sec);
+      } else if (sec.column === 'main') {
+        mainSections.push(sec);
+      } else if (SIDEBAR_SECTION_TYPES.has(sec.type) && meta.category !== 'academic') {
         sidebarSections.push(sec);
       } else if (meta.category === 'academic' && (sec.type === 'skills' || sec.type === 'education')) {
         sidebarSections.push(sec);
@@ -202,14 +214,15 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
       }
     }
 
-    const isLeft = meta.layout === 'two-column-left';
+    const isLeft = meta.layout !== 'two-column-right';
+    const ratio = colOverride === 'mix' ? '42% 1fr' : meta.sidebarRatio || '32% 1fr';
 
     return (
       <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
         <TemplateHeader data={data} headerStyle={effectiveHeaderStyle} />
         <div
           className="grid gap-5 items-start"
-          style={{ gridTemplateColumns: meta.sidebarRatio || '32% 1fr' }}
+          style={{ gridTemplateColumns: ratio }}
         >
           {isLeft ? (
             <>

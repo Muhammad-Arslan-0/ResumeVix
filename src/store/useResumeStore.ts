@@ -102,6 +102,9 @@ interface ResumeStoreState {
   reorderSections: (activeId: string, overId: string) => void;
   toggleSectionVisibility: (sectionId: string) => void;
   renameSection: (sectionId: string, title: string) => void;
+  setSectionColumn: (sectionId: string, column: 'main' | 'sidebar') => void;
+  addPageBreak: () => void;
+  removeSection: (sectionId: string) => void;
   reorderItems: (sectionKey: string, activeId: string, overId: string) => void;
 
   // Template & Style
@@ -490,6 +493,37 @@ export const useResumeStore = create<ResumeStoreState>()(
           if (state.resume.customSections[sectionId]) {
             state.resume.customSections[sectionId].title = title;
           }
+        }),
+
+      setSectionColumn: (sectionId, column) =>
+        set((state) => {
+          const sec = state.template.sections.find((s) => s.id === sectionId);
+          if (sec) {
+            pushHistory(state);
+            sec.column = column;
+          }
+        }),
+
+      addPageBreak: () =>
+        set((state) => {
+          pushHistory(state);
+          const maxOrder = state.template.sections.reduce(
+            (max, s) => Math.max(max, s.order),
+            -1
+          );
+          state.template.sections.push({
+            id: uid('pagebreak'),
+            type: 'page_break',
+            title: 'Page break',
+            visible: true,
+            order: maxOrder + 1,
+          });
+        }),
+
+      removeSection: (sectionId) =>
+        set((state) => {
+          pushHistory(state);
+          state.template.sections = state.template.sections.filter((s) => s.id !== sectionId);
         }),
 
       reorderItems: (sectionKey, activeId, overId) =>

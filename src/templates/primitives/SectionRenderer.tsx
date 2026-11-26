@@ -93,6 +93,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
     if (!section.visible) return null;
 
     switch (section.type) {
+      case 'page_break':
+        return <div className="break-before-page h-0" aria-hidden="true" />;
+
       case 'summary': {
         if (!data.summary.trim()) return null;
         return (

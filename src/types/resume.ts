@@ -9,7 +9,8 @@ export type SectionType =
   | 'publications'
   | 'projects'
   | 'skills'
-  | 'custom';
+  | 'custom'
+  | 'page_break';
 
 export interface ProfileData {
   fullName: string;

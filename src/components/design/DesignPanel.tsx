@@ -1,11 +1,41 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  BookOpen,
+  Briefcase,
+  Check,
+  Eye,
+  EyeOff,
+  FileSpreadsheet,
+  FolderGit2,
+  GraduationCap,
+  Layers,
+  Plus,
+  Scissors,
+  Sparkles,
+  Trash2,
+  UserSquare2,
+} from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { TEMPLATE_REGISTRY } from '@/templates/registry';
 import { ACCENT_PALETTES, CURATED_FONTS } from '@/lib/fonts';
-import { DensityLevel, TemplateCategory } from '@/types';
+import { DensityLevel, SectionType, TemplateCategory } from '@/types';
+import { DragHandle, SortableWrapper } from '@/components/editor/SortableWrapper';
 
 type CustomizeSection =
   | 'document'
@@ -13,6 +43,7 @@ type CustomizeSection =
   | 'layout'
   | 'font-size'
   | 'spacing'
+  | 'entries'
   | 'headings'
   | 'font'
   | 'colors'
@@ -26,6 +57,7 @@ const NAV_ITEMS: Array<{ id: CustomizeSection; label: string }> = [
   { id: 'layout', label: 'Layout' },
   { id: 'font-size', label: 'Font Size' },
   { id: 'spacing', label: 'Spacing' },
+  { id: 'entries', label: 'Entries' },
   { id: 'headings', label: 'Headings' },
   { id: 'font', label: 'Font' },
   { id: 'colors', label: 'Colors' },
@@ -42,20 +74,61 @@ const CATEGORIES: { id: TemplateCategory | 'all'; label: string }[] = [
   { id: 'creative', label: 'Creative' },
 ];
 
+function getSectionIcon(type: SectionType) {
+  switch (type) {
+    case 'summary':
+      return UserSquare2;
+    case 'experience':
+      return Briefcase;
+    case 'education':
+      return GraduationCap;
+    case 'publications':
+      return BookOpen;
+    case 'projects':
+      return FolderGit2;
+    case 'skills':
+      return Sparkles;
+    case 'page_break':
+      return Scissors;
+    default:
+      return Layers;
+  }
+}
+
 export const DesignPanel: React.FC = () => {
   const template = useResumeStore((s) => s.template);
   const switchTemplate = useResumeStore((s) => s.switchTemplate);
   const setPageSize = useResumeStore((s) => s.setPageSize);
   const updateStyleConfig = useResumeStore((s) => s.updateStyleConfig);
   const toggleSectionVisibility = useResumeStore((s) => s.toggleSectionVisibility);
+  const reorderSections = useResumeStore((s) => s.reorderSections);
+  const setSectionColumn = useResumeStore((s) => s.setSectionColumn);
+  const addPageBreak = useResumeStore((s) => s.addPageBreak);
+  const removeSection = useResumeStore((s) => s.removeSection);
 
   const [activeNav, setActiveNav] = useState<CustomizeSection>('document');
   const [category, setCategory] = useState<TemplateCategory | 'all'>('all');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const filteredTemplates =
     category === 'all'
       ? TEMPLATE_REGISTRY
       : TEMPLATE_REGISTRY.filter((t) => t.category === category);
+
+  const sortedSections = [...template.sections].sort((a, b) => a.order - b.order);
+  const colMode = template.style.columnLayoutOverride || 'auto';
+  const showColumnBadges = colMode === 'two' || colMode === 'mix';
+
+  const handleLayoutDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      reorderSections(String(active.id), String(over.id));
+    }
+  };
 
   return (
     <div className="flex gap-3 h-full min-h-[420px]">
@@ -165,6 +238,158 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'layout' && (
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
+            {/* Columns: One / Two / Mix */}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm">Columns</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: 'one', label: 'One' },
+                    { id: 'two', label: 'Two' },
+                    { id: 'mix', label: 'Mix' },
+                  ] as const
+                ).map((col) => {
+                  const active = colMode === col.id || (colMode === 'auto' && col.id === 'one');
+                  return (
+                    <button
+                      key={col.id}
+                      type="button"
+                      onClick={() => updateStyleConfig({ columnLayoutOverride: col.id })}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="w-8 h-6 rounded border border-current/30 flex gap-0.5 p-0.5">
+                        {col.id === 'one' ? (
+                          <div className="w-full h-full bg-current/25 rounded-[1px]" />
+                        ) : col.id === 'two' ? (
+                          <>
+                            <div className="w-1/3 h-full bg-current/30 rounded-[1px]" />
+                            <div className="w-2/3 h-full bg-current/20 rounded-[1px]" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-1/2 h-full bg-current/30 rounded-[1px]" />
+                            <div className="w-1/2 h-full bg-current/20 rounded-[1px]" />
+                          </>
+                        )}
+                      </div>
+                      <span>{col.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Change Section Layout (FlowCV-style) */}
+            <div className="space-y-2.5">
+              <h3 className="font-semibold text-sm">Change Section Layout</h3>
+
+              {/* Personal Details Header Card */}
+              <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/70 flex flex-col items-center justify-center gap-1 text-slate-700 dark:text-slate-200">
+                <FileSpreadsheet className="w-5 h-5 text-slate-500" />
+                <span className="font-semibold text-xs">Personal Details</span>
+              </div>
+
+              {/* Draggable Section Pills */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleLayoutDragEnd}
+              >
+                <SortableContext
+                  items={sortedSections.map((s) => s.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-1.5">
+                    {sortedSections.map((sec) => {
+                      const Icon = getSectionIcon(sec.type);
+                      const isBreak = sec.type === 'page_break';
+                      return (
+                        <SortableWrapper key={sec.id} id={sec.id}>
+                          {(handleProps) => (
+                            <div
+                              className={`px-2 py-2 rounded-xl flex items-center gap-2 ${
+                                isBreak
+                                  ? 'border border-dashed border-slate-300 dark:border-slate-700 bg-transparent'
+                                  : 'bg-slate-100/90 dark:bg-slate-800/80'
+                              }`}
+                            >
+                              <DragHandle {...handleProps} />
+                              <Icon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
+                              <span
+                                className={`flex-1 font-medium truncate ${
+                                  !sec.visible ? 'opacity-45 line-through' : ''
+                                }`}
+                              >
+                                {sec.title}
+                              </span>
+
+                              {showColumnBadges && !isBreak && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSectionColumn(
+                                      sec.id,
+                                      sec.column === 'sidebar' ? 'main' : 'sidebar'
+                                    )
+                                  }
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium"
+                                  title="Toggle Left / Right Column"
+                                >
+                                  {sec.column === 'sidebar' ? 'Left' : 'Right'}
+                                </button>
+                              )}
+
+                              {isBreak ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeSection(sec.id)}
+                                  aria-label="Remove page break"
+                                  className="p-1 text-slate-400 hover:text-red-500"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSectionVisibility(sec.id)}
+                                  aria-label={sec.visible ? 'Hide section' : 'Show section'}
+                                  className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                                >
+                                  {sec.visible ? (
+                                    <Eye className="w-3.5 h-3.5 text-teal-600" />
+                                  ) : (
+                                    <EyeOff className="w-3.5 h-3.5 opacity-45" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </SortableWrapper>
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              {/* Add Page Break Button */}
+              <button
+                type="button"
+                onClick={addPageBreak}
+                className="w-full py-2 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 text-slate-600 dark:text-slate-300 font-medium flex items-center justify-center gap-1.5 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Page break</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeNav === 'entries' && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
             <h3 className="font-semibold text-sm">Entry Layout</h3>
             <div className="grid grid-cols-1 gap-2">
@@ -406,8 +631,8 @@ export const DesignPanel: React.FC = () => {
         {activeNav === 'sections' && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
             <h3 className="font-semibold text-sm mb-2">Section Visibility</h3>
-            {[...template.sections]
-              .sort((a, b) => a.order - b.order)
+            {sortedSections
+              .filter((s) => s.type !== 'page_break')
               .map((sec) => (
                 <div
                   key={sec.id}

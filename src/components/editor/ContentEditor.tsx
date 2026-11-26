@@ -97,7 +97,9 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+  const sortedSections = [...sections]
+    .filter((s) => s.type !== 'page_break')
+    .sort((a, b) => a.order - b.order);
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
