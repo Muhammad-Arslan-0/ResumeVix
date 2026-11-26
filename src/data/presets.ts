@@ -1,0 +1,226 @@
+import { ResumeData, TemplateConfig } from '@/types';
+
+export const TECH_RESUME_PRESET: ResumeData = {
+  id: 'resume-tech-default',
+  title: 'Senior Backend Engineer Resume',
+  updatedAt: '2026-11-26T00:00:00.000Z',
+  profile: {
+    fullName: 'Alex Rivera',
+    headline: 'Senior Distributed Systems & Backend Engineer',
+    email: 'alex.rivera@example.com',
+    phone: '+1 (415) 555-0192',
+    location: 'San Francisco, CA',
+    website: 'https://alexrivera.dev',
+    linkedin: 'linkedin.com/in/alexrivera',
+    github: 'github.com/arivera-sys',
+  },
+  summary:
+    'Backend engineer with 7+ years designing high-throughput distributed systems, event-driven data pipelines, and low-latency APIs in Go, TypeScript, and Rust. Reduced infrastructure spend by 34% while scaling payment ingestion to 45k RPS at 99.99% availability.',
+  experience: [
+    {
+      id: 'exp-1',
+      company: 'StripeScale Systems',
+      role: 'Senior Backend Engineer',
+      location: 'San Francisco, CA',
+      startDate: '2022-03',
+      endDate: 'Present',
+      current: true,
+      visible: true,
+      bullets: [
+        'Architected a multi-region idempotent ledger service in Go and PostgreSQL handling 45,000+ requests/sec with p99 latency under 18ms.',
+        'Led migration from monolithic cron workers to Kafka-backed event consumers, cutting settlement lag from 4 hours to 12 seconds.',
+        'Reduced AWS RDS and compute spend by 34% (\$420k/year) via read-replica query routing, connection pooling, and hot-key caching in Redis.',
+      ],
+    },
+    {
+      id: 'exp-2',
+      company: 'CloudPulse Observability',
+      role: 'Software Engineer II',
+      location: 'Seattle, WA',
+      startDate: '2019-06',
+      endDate: '2022-02',
+      current: false,
+      visible: true,
+      bullets: [
+        'Built real-time log ingestion pipelines in Rust and ClickHouse processing 1.8 TB/day with zero data loss across node restarts.',
+        'Designed multi-tenant rate-limiting middleware using sliding-window Lua scripts in Redis, preventing noisy-neighbor outages.',
+        'Mentored 4 junior engineers and instituted automated contract testing across 12 gRPC microservices.',
+      ],
+    },
+  ],
+  education: [
+    {
+      id: 'edu-1',
+      institution: 'University of Washington',
+      degree: 'B.S. in Computer Science',
+      fieldOfStudy: 'Distributed Systems & Databases',
+      location: 'Seattle, WA',
+      startDate: '2015-09',
+      endDate: '2019-05',
+      gpa: '3.87 / 4.00',
+      honors: ['Magna Cum Laude', 'Dean’s List (All Quarters)'],
+      visible: true,
+    },
+  ],
+  publications: [],
+  projects: [
+    {
+      id: 'proj-1',
+      name: 'RaftKV — Embedded Consensus Store',
+      role: 'Creator & Maintainer',
+      url: 'github.com/arivera-sys/raftkv',
+      startDate: '2024',
+      endDate: 'Present',
+      technologies: ['Rust', 'Tokio', 'gRPC', 'Raft'],
+      visible: true,
+      bullets: [
+        'Implemented leader election, log replication, and snapshotting in Rust with Jepsen-style fault-injection tests (1.2k+ GitHub stars).',
+      ],
+    },
+  ],
+  skills: [
+    {
+      id: 'skill-1',
+      category: 'Languages',
+      items: ['Go', 'TypeScript', 'Rust', 'SQL', 'Python'],
+      visible: true,
+    },
+    {
+      id: 'skill-2',
+      category: 'Infrastructure & Data',
+      items: ['PostgreSQL', 'Kafka', 'Redis', 'ClickHouse', 'Kubernetes', 'Docker', 'Terraform'],
+      visible: true,
+    },
+  ],
+  customSections: {},
+};
+
+export const ACADEMIC_CV_PRESET: ResumeData = {
+  id: 'cv-academic-default',
+  title: 'Academic Research CV',
+  updatedAt: '2026-11-26T00:00:00.000Z',
+  profile: {
+    fullName: 'Dr. Maya Lin, Ph.D.',
+    headline: 'Postdoctoral Research Fellow in Computational Genomics',
+    email: 'maya.lin@stanford.edu',
+    phone: '+1 (650) 555-0148',
+    location: 'Palo Alto, CA',
+    website: 'https://mayalinlab.org',
+    orcid: '0000-0002-1825-0097',
+    github: 'github.com/mayalin-bio',
+  },
+  summary:
+    'Computational biologist investigating cis-regulatory chromatin dynamics and single-cell multi-omics using foundation models. Author of 11 peer-reviewed publications and recipient of the NIH F32 Ruth L. Kirschstein Postdoctoral Fellowship.',
+  education: [
+    {
+      id: 'edu-acad-1',
+      institution: 'Massachusetts Institute of Technology (MIT)',
+      degree: 'Ph.D. in Computational & Systems Biology',
+      location: 'Cambridge, MA',
+      startDate: '2019-09',
+      endDate: '2024-05',
+      thesisTitle: 'Deep Generative Models of Enhancer-Promoter Regulatory Grammar',
+      advisor: 'Prof. Elena Vance',
+      honors: ['MIT Presidential Graduate Fellow'],
+      visible: true,
+    },
+    {
+      id: 'edu-acad-2',
+      institution: 'UC Berkeley',
+      degree: 'B.A. in Molecular & Cell Biology, Minor in Computer Science',
+      location: 'Berkeley, CA',
+      startDate: '2015-08',
+      endDate: '2019-05',
+      gpa: '3.94 / 4.00',
+      honors: ['Highest Distinction in General Scholarship'],
+      visible: true,
+    },
+  ],
+  experience: [
+    {
+      id: 'exp-acad-1',
+      company: 'Stanford University School of Medicine',
+      role: 'Postdoctoral Research Fellow',
+      location: 'Palo Alto, CA',
+      startDate: '2024-07',
+      endDate: 'Present',
+      current: true,
+      visible: true,
+      bullets: [
+        'Developed a multi-modal transformer predicting cell-type-specific chromatin accessibility across 140 human tissues.',
+        'Co-supervising 3 Ph.D. candidates and leading weekly computational genomics journal club.',
+      ],
+    },
+  ],
+  publications: [
+    {
+      id: 'pub-1',
+      title: 'Zero-Shot Variant Effect Prediction Across Distal Enhancers Using Equivariant Sequence Models',
+      authors: ['Maya Lin', 'J. K. Patel', 'Elena Vance'],
+      venue: 'Nature Methods',
+      year: '2025',
+      doiOrUrl: '10.1038/s41592-025-0000-0',
+      type: 'journal',
+      visible: true,
+    },
+    {
+      id: 'pub-2',
+      title: 'Single-Cell Multi-Omic Alignment via Optimal Transport on Latent Regulatory Manifolds',
+      authors: ['S. Chen', 'Maya Lin', 'Elena Vance'],
+      venue: 'NeurIPS (Spotlight)',
+      year: '2023',
+      type: 'conference',
+      visible: true,
+    },
+  ],
+  projects: [],
+  skills: [
+    {
+      id: 'skill-acad-1',
+      category: 'Computational Methods',
+      items: ['PyTorch', 'JAX', 'Snakemake', 'Nextflow', 'R / Bioconductor', 'Scanpy'],
+      visible: true,
+    },
+  ],
+  customSections: {
+    custom_grants: {
+      id: 'custom_grants',
+      title: 'Grants, Fellowships & Honors',
+      entries: [
+        {
+          id: 'grant-1',
+          title: 'NIH F32 Ruth L. Kirschstein Postdoctoral Fellowship',
+          subtitle: 'National Human Genome Research Institute (NHGRI)',
+          dateRange: '2024 – 2027',
+          bullets: ['Awarded \$214,000 direct support for regulatory genomics foundation modeling.'],
+          visible: true,
+        },
+      ],
+    },
+  },
+};
+
+export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
+  templateId: 'ats-minimal',
+  pageSize: 'A4',
+  style: {
+    fontFamily: 'Inter',
+    headingFontFamily: 'Inter',
+    fontSizePt: 10,
+    lineHeight: 1.4,
+    accentColor: '#0f766e',
+    textColor: '#111827',
+    mutedColor: '#4b5563',
+    marginMm: 14,
+    sectionSpacingPx: 14,
+    density: 'standard',
+  },
+  sections: [
+    { id: 'summary', type: 'summary', title: 'Professional Summary', visible: true, order: 0 },
+    { id: 'experience', type: 'experience', title: 'Experience', visible: true, order: 1 },
+    { id: 'projects', type: 'projects', title: 'Selected Projects', visible: true, order: 2 },
+    { id: 'education', type: 'education', title: 'Education', visible: true, order: 3 },
+    { id: 'publications', type: 'publications', title: 'Publications', visible: false, order: 4 },
+    { id: 'skills', type: 'skills', title: 'Technical Skills', visible: true, order: 5 },
+  ],
+};

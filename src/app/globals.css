@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Crisp Print & Multi-page PDF rules */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-container {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    transform: none !important;
+  }
+
+  .resume-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .rv-section-heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .rv-entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  li,
+  p {
+    orphans: 2;
+    widows: 2;
+  }
+}

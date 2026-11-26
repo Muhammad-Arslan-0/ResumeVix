@@ -1,0 +1,237 @@
+import React from 'react';
+import { ResumeData, SectionConfig, TemplateConfig } from '@/types';
+import { getTemplateMeta, TemplateDefinition } from './registry';
+import { PageShell, SectionRenderer } from './primitives';
+
+interface TemplateProps {
+  data: ResumeData;
+  config: TemplateConfig;
+}
+
+const SIDEBAR_SECTION_TYPES = new Set(['skills', 'education', 'publications']);
+
+function ContactLine({ data, centered = false }: { data: ResumeData; centered?: boolean }) {
+  const { profile } = data;
+  const items = [
+    profile.email,
+    profile.phone,
+    profile.location,
+    profile.website,
+    profile.linkedin,
+    profile.github,
+    profile.orcid ? `ORCID: ${profile.orcid}` : undefined,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div
+      className={`text-[0.88em] text-[var(--rv-muted)] flex flex-wrap gap-x-2.5 gap-y-0.5 ${
+        centered ? 'justify-center' : ''
+      }`}
+    >
+      {items.map((item, idx) => (
+        <span key={idx}>
+          {idx > 0 && <span className="mr-2.5 opacity-50">•</span>}
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TemplateHeader({
+  data,
+  meta,
+}: {
+  data: ResumeData;
+  meta: TemplateDefinition;
+}) {
+  const headingStyle = { fontFamily: 'var(--rv-font-heading)' };
+  const { profile } = data;
+
+  if (meta.headerStyle === 'banner') {
+    return (
+      <header
+        className="mb-4 p-4 rounded-sm text-white"
+        style={{ backgroundColor: 'var(--rv-accent)' }}
+      >
+        <h1 style={headingStyle} className="text-[1.9em] font-bold tracking-tight">
+          {profile.fullName || 'Your Name'}
+        </h1>
+        {profile.headline && (
+          <p className="text-[1.05em] opacity-90 mt-0.5">{profile.headline}</p>
+        )}
+        <div className="text-[0.86em] opacity-85 mt-2 flex flex-wrap gap-x-3 gap-y-0.5">
+          {[profile.email, profile.phone, profile.location, profile.website, profile.linkedin, profile.github]
+            .filter(Boolean)
+            .map((item, i) => (
+              <span key={i}>{item}</span>
+            ))}
+        </div>
+      </header>
+    );
+  }
+
+  if (meta.headerStyle === 'centered') {
+    return (
+      <header className="text-center border-b-2 border-[var(--rv-accent)] pb-3 mb-4">
+        <h1 style={headingStyle} className="text-[1.85em] font-bold tracking-tight">
+          {profile.fullName || 'Your Name'}
+        </h1>
+        {profile.headline && (
+          <p className="text-[1.02em] text-[var(--rv-muted)] mt-0.5">{profile.headline}</p>
+        )}
+        <div className="mt-1.5">
+          <ContactLine data={data} centered />
+        </div>
+      </header>
+    );
+  }
+
+  if (meta.headerStyle === 'split') {
+    return (
+      <header className="flex justify-between items-end border-b-2 border-[var(--rv-accent)] pb-3 mb-4 gap-4">
+        <div>
+          <h1 style={headingStyle} className="text-[1.8em] font-bold tracking-tight">
+            {profile.fullName || 'Your Name'}
+          </h1>
+          {profile.headline && (
+            <p className="text-[1.02em] text-[var(--rv-accent)] font-medium mt-0.5">
+              {profile.headline}
+            </p>
+          )}
+        </div>
+        <div className="text-right text-[0.86em] text-[var(--rv-muted)] space-y-0.5 shrink-0">
+          {profile.email && <div>{profile.email}</div>}
+          {profile.phone && <div>{profile.phone}</div>}
+          {profile.location && <div>{profile.location}</div>}
+          {profile.linkedin && <div>{profile.linkedin}</div>}
+        </div>
+      </header>
+    );
+  }
+
+  // Default: left
+  return (
+    <header className="border-b border-gray-300 pb-2.5 mb-3.5">
+      <h1 style={headingStyle} className="text-[1.75em] font-bold tracking-tight">
+        {profile.fullName || 'Your Name'}
+      </h1>
+      {profile.headline && (
+        <p className="text-[1.02em] text-[var(--rv-accent)] font-medium mt-0.5">
+          {profile.headline}
+        </p>
+      )}
+      <div className="mt-1">
+        <ContactLine data={data} />
+      </div>
+    </header>
+  );
+}
+
+export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ data, config }) => {
+  const meta = getTemplateMeta(config.templateId);
+  const orderedSections = [...config.sections]
+    .filter((s) => s.visible)
+    .sort((a, b) => a.order - b.order);
+
+  const highlightName = meta.category === 'academic' ? data.profile.fullName : undefined;
+
+  if (meta.layout === 'two-column-left' || meta.layout === 'two-column-right') {
+    const sidebarSections: SectionConfig[] = [];
+    const mainSections: SectionConfig[] = [];
+
+    for (const sec of orderedSections) {
+      if (SIDEBAR_SECTION_TYPES.has(sec.type) && meta.category !== 'academic') {
+        sidebarSections.push(sec);
+      } else if (meta.category === 'academic' && (sec.type === 'skills' || sec.type === 'education')) {
+        sidebarSections.push(sec);
+      } else {
+        mainSections.push(sec);
+      }
+    }
+
+    const isLeft = meta.layout === 'two-column-left';
+
+    return (
+      <PageShell config={config} className={`template-${meta.id}`}>
+        <TemplateHeader data={data} meta={meta} />
+        <div
+          className="grid gap-5 items-start"
+          style={{ gridTemplateColumns: meta.sidebarRatio || '32% 1fr' }}
+        >
+          {isLeft ? (
+            <>
+              <aside className="flex flex-col gap-[var(--rv-section-gap)] bg-gray-50/80 p-3 rounded">
+                {sidebarSections.map((section) => (
+                  <SectionRenderer
+                    key={section.id}
+                    section={section}
+                    data={data}
+                    variant={meta.variant}
+                    highlightAuthorName={highlightName}
+                  />
+                ))}
+              </aside>
+              <main className="flex flex-col gap-[var(--rv-section-gap)]">
+                {mainSections.map((section) => (
+                  <SectionRenderer
+                    key={section.id}
+                    section={section}
+                    data={data}
+                    variant={meta.variant}
+                    highlightAuthorName={highlightName}
+                  />
+                ))}
+              </main>
+            </>
+          ) : (
+            <>
+              <main className="flex flex-col gap-[var(--rv-section-gap)]">
+                {mainSections.map((section) => (
+                  <SectionRenderer
+                    key={section.id}
+                    section={section}
+                    data={data}
+                    variant={meta.variant}
+                    highlightAuthorName={highlightName}
+                  />
+                ))}
+              </main>
+              <aside className="flex flex-col gap-[var(--rv-section-gap)] border-l border-gray-200 pl-3.5">
+                {sidebarSections.map((section) => (
+                  <SectionRenderer
+                    key={section.id}
+                    section={section}
+                    data={data}
+                    variant={meta.variant}
+                    highlightAuthorName={highlightName}
+                  />
+                ))}
+              </aside>
+            </>
+          )}
+        </div>
+      </PageShell>
+    );
+  }
+
+  // Single-column & banner-header
+  return (
+    <PageShell config={config} className={`template-${meta.id}`}>
+      <TemplateHeader data={data} meta={meta} />
+      <main className="flex flex-col gap-[var(--rv-section-gap)]">
+        {orderedSections.map((section) => (
+          <SectionRenderer
+            key={section.id}
+            section={section}
+            data={data}
+            variant={meta.variant}
+            highlightAuthorName={highlightName}
+          />
+        ))}
+      </main>
+    </PageShell>
+  );
+});
+
+UnifiedTemplateRenderer.displayName = 'UnifiedTemplateRenderer';
