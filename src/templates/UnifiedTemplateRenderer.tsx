@@ -304,6 +304,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -317,6 +318,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -333,6 +335,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
                 ))}
@@ -346,6 +349,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
                 ))}

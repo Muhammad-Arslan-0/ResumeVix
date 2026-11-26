@@ -72,6 +72,13 @@ export interface TemplateStyleTokens {
     centerText?: string;
     rightText?: string;
   };
+  sectionCustomizations?: {
+    showSummaryHeading?: boolean;
+    experienceTitleOrder?: 'role-first' | 'company-first';
+    educationTitleOrder?: 'degree-first' | 'school-first';
+    skillsLayout?: 'grid' | 'rows' | 'compact' | 'bubble';
+    skillsGridCols?: 1 | 2 | 3 | 4;
+  };
 }
 
 export interface TemplateConfig {

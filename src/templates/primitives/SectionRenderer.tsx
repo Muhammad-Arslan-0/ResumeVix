@@ -1,6 +1,6 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
-import { ResumeData, SectionConfig } from '@/types';
+import { ResumeData, SectionConfig, TemplateConfig } from '@/types';
 import { TemplateDefinition } from '../registry';
 
 interface SectionRendererProps {
@@ -9,6 +9,7 @@ interface SectionRendererProps {
   variant: TemplateDefinition['variant'];
   entryLayout?: TemplateDefinition['entryLayout'];
   headingUppercase?: boolean;
+  sectionCustomizations?: TemplateConfig['style']['sectionCustomizations'];
   highlightAuthorName?: string;
 }
 
@@ -89,8 +90,20 @@ function SectionHeading({
 }
 
 export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
-  ({ section, data, variant, entryLayout = 'stacked', headingUppercase = true, highlightAuthorName }) => {
+  ({
+    section,
+    data,
+    variant,
+    entryLayout = 'stacked',
+    headingUppercase = true,
+    sectionCustomizations,
+    highlightAuthorName,
+  }) => {
     if (!section.visible) return null;
+    const sc = sectionCustomizations || {};
+    const expCompanyFirst = sc.experienceTitleOrder === 'company-first';
+    const eduSchoolFirst = sc.educationTitleOrder === 'school-first';
+    const showSummaryHeading = sc.showSummaryHeading ?? true;
 
     switch (section.type) {
       case 'page_break':
@@ -100,7 +113,13 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (!data.summary.trim()) return null;
         return (
           <section className="rv-section">
-            <SectionHeading title={section.title} variant={variant} uppercase={headingUppercase} />
+            {showSummaryHeading && (
+              <SectionHeading
+                title={section.title}
+                variant={variant}
+                uppercase={headingUppercase}
+              />
+            )}
             <p className="text-[0.96em] text-[var(--rv-text)] leading-relaxed">{data.summary}</p>
           </section>
         );
@@ -127,8 +146,17 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                     </div>
                     <div>
                       <div className="text-[1em]">
-                        <span className="font-bold">{item.role}</span>
-                        {item.company && <span className="italic">, {item.company}</span>}
+                        {expCompanyFirst ? (
+                          <>
+                            <span className="font-bold">{item.company}</span>
+                            {item.role && <span className="italic">, {item.role}</span>}
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-bold">{item.role}</span>
+                            {item.company && <span className="italic">, {item.company}</span>}
+                          </>
+                        )}
                       </div>
                       {item.bullets.length > 0 && (
                         <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[0.94em]">
@@ -191,11 +219,23 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                     </div>
                     <div>
                       <div>
-                        <span className="font-bold">
-                          {item.degree}
-                          {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ''}
-                        </span>
-                        <span className="italic">, {item.institution}</span>
+                        {eduSchoolFirst ? (
+                          <>
+                            <span className="font-bold">{item.institution}</span>
+                            <span className="italic">
+                              , {item.degree}
+                              {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ''}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-bold">
+                              {item.degree}
+                              {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ''}
+                            </span>
+                            <span className="italic">, {item.institution}</span>
+                          </>
+                        )}
                       </div>
                       {item.gpa && (
                         <div className="text-[0.9em] font-semibold mt-0.5">GPA: {item.gpa}</div>
@@ -337,11 +377,28 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
       case 'skills': {
         const visibleItems = data.skills.filter((s) => s.visible);
         if (visibleItems.length === 0) return null;
+        const effectiveSkillsLayout =
+          sc.skillsLayout ||
+          (variant === 'flowcv-banner'
+            ? 'grid'
+            : variant === 'creative-pill'
+              ? 'bubble'
+              : 'rows');
+        const cols = sc.skillsGridCols || 3;
+        const gridColsClass =
+          cols === 1
+            ? 'grid-cols-1'
+            : cols === 2
+              ? 'grid-cols-2'
+              : cols === 4
+                ? 'grid-cols-4'
+                : 'grid-cols-3';
+
         return (
           <section className="rv-section break-inside-avoid">
             <SectionHeading title={section.title} variant={variant} />
-            {variant === 'flowcv-banner' ? (
-              <div className="grid grid-cols-3 gap-x-5 gap-y-2.5 text-[0.93em]">
+            {effectiveSkillsLayout === 'grid' ? (
+              <div className={`grid ${gridColsClass} gap-x-5 gap-y-2.5 text-[0.93em]`}>
                 {visibleItems.map((grp) => (
                   <div key={grp.id}>
                     <div className="font-bold">{grp.category}</div>
@@ -351,7 +408,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                   </div>
                 ))}
               </div>
-            ) : variant === 'creative-pill' ? (
+            ) : effectiveSkillsLayout === 'bubble' ? (
               <div className="flex flex-col gap-1.5">
                 {visibleItems.map((grp) => (
                   <div key={grp.id} className="flex flex-wrap items-center gap-1.5">
@@ -367,6 +424,10 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                   </div>
                 ))}
               </div>
+            ) : effectiveSkillsLayout === 'compact' ? (
+              <p className="text-[0.93em] leading-relaxed">
+                {visibleItems.map((g) => `${g.category}: ${g.items.join(', ')}`).join(' • ')}
+              </p>
             ) : (
               <div className="flex flex-col gap-1 text-[0.94em]">
                 {visibleItems.map((grp) => (

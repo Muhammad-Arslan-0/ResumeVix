@@ -1096,29 +1096,199 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'sections' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-            <h3 className="font-semibold text-sm mb-2">Section Visibility</h3>
-            {sortedSections
-              .filter((s) => s.type !== 'page_break')
-              .map((sec) => (
-                <div
-                  key={sec.id}
-                  className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
-                >
-                  <span>{sec.title}</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleSectionVisibility(sec.id)}
-                    className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                  >
-                    {sec.visible ? (
-                      <Eye className="w-4 h-4 text-teal-600" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 opacity-50" />
-                    )}
-                  </button>
+          <div className="space-y-3">
+            {/* Summary Card */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
+              <h3 className="font-semibold text-sm">Summary</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={template.style.sectionCustomizations?.showSummaryHeading ?? true}
+                  onChange={(e) =>
+                    updateStyleConfig({
+                      sectionCustomizations: {
+                        ...template.style.sectionCustomizations,
+                        showSummaryHeading: e.target.checked,
+                      },
+                    })
+                  }
+                  className="accent-teal-600 rounded"
+                />
+                <span>Show summary heading</span>
+              </label>
+            </div>
+
+            {/* Work Experience Card */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
+              <h3 className="font-semibold text-sm">Work Experience</h3>
+              <div className="text-[11px] font-medium text-slate-500">Title/Subtitle Order</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'role-first', label: 'Job Title – Employer' },
+                    { id: 'company-first', label: 'Employer – Job Title' },
+                  ] as const
+                ).map((opt) => {
+                  const active =
+                    (template.style.sectionCustomizations?.experienceTitleOrder || 'role-first') ===
+                    opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          sectionCustomizations: {
+                            ...template.style.sectionCustomizations,
+                            experienceTitleOrder: opt.id,
+                          },
+                        })
+                      }
+                      className={`py-1.5 px-2 rounded-lg border text-[11px] transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Education Card */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
+              <h3 className="font-semibold text-sm">Education</h3>
+              <div className="text-[11px] font-medium text-slate-500">Title & Subtitle Order</div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'degree-first', label: 'Degree, School' },
+                    { id: 'school-first', label: 'School, Degree' },
+                  ] as const
+                ).map((opt) => {
+                  const active =
+                    (template.style.sectionCustomizations?.educationTitleOrder ||
+                      'degree-first') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          sectionCustomizations: {
+                            ...template.style.sectionCustomizations,
+                            educationTitleOrder: opt.id,
+                          },
+                        })
+                      }
+                      className={`py-1.5 px-2 rounded-lg border text-[11px] transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Skills Card */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
+              <h3 className="font-semibold text-sm">Skills</h3>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(
+                  [
+                    { id: 'grid', label: 'Grid' },
+                    { id: 'rows', label: 'Rows' },
+                    { id: 'compact', label: 'Compact' },
+                    { id: 'bubble', label: 'Bubble' },
+                  ] as const
+                ).map((opt) => {
+                  const active =
+                    (template.style.sectionCustomizations?.skillsLayout || 'grid') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          sectionCustomizations: {
+                            ...template.style.sectionCustomizations,
+                            skillsLayout: opt.id,
+                          },
+                        })
+                      }
+                      className={`py-1.5 rounded-lg border text-[11px] transition ${
+                        active
+                          ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {(template.style.sectionCustomizations?.skillsLayout || 'grid') === 'grid' && (
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {([1, 2, 3, 4] as const).map((cols) => {
+                    const active =
+                      (template.style.sectionCustomizations?.skillsGridCols || 3) === cols;
+                    return (
+                      <button
+                        key={cols}
+                        type="button"
+                        onClick={() =>
+                          updateStyleConfig({
+                            sectionCustomizations: {
+                              ...template.style.sectionCustomizations,
+                              skillsGridCols: cols,
+                            },
+                          })
+                        }
+                        className={`py-1 rounded-lg border text-[11px] font-mono transition ${
+                          active
+                            ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold'
+                            : 'border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {cols} Col
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Section Visibility */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+              <h3 className="font-semibold text-sm mb-2">Section Visibility</h3>
+              {sortedSections
+                .filter((s) => s.type !== 'page_break')
+                .map((sec) => (
+                  <div
+                    key={sec.id}
+                    className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                  >
+                    <span>{sec.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionVisibility(sec.id)}
+                      className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    >
+                      {sec.visible ? (
+                        <Eye className="w-4 h-4 text-teal-600" />
+                      ) : (
+                        <EyeOff className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
       </div>
