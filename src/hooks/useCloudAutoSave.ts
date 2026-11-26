@@ -45,7 +45,7 @@ export function useCloudAutoSave() {
       });
 
       const state = useResumeStore.getState();
-      if (!state.activeResumeId) {
+      if (!state.activeResumeId && state.hasLocalEdits) {
         try {
           setSyncState('saving');
           const record = await migrateGuestDraftToCloud(

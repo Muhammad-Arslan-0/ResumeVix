@@ -10,7 +10,7 @@ export const AuthGate: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [verifyEmailSent, setVerifyEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +18,6 @@ export const AuthGate: React.FC = () => {
     if (!supabase) return;
     setLoading(true);
     setError(null);
-    setMessage(null);
 
     try {
       if (mode === 'signup') {
@@ -28,7 +27,7 @@ export const AuthGate: React.FC = () => {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) throw err;
-        setMessage('Account created! Check your email to confirm, or sign in now.');
+        setVerifyEmailSent(true);
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -60,68 +59,93 @@ export const AuthGate: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs text-teal-800 dark:text-teal-200">
-          <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
-          <p>Sign in with your email to access your cloud-synced resumes and studio.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
+        {verifyEmailSent ? (
+          <div className="py-2 text-center space-y-4 text-xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Mail className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="font-semibold text-sm text-slate-900 dark:text-white">
+                Verify your email address
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                We sent a verification link to{' '}
+                <strong className="text-slate-900 dark:text-white">{email}</strong>. Please check
+                your inbox (and spam folder), click the link to verify your account, and then
+                sign in.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setVerifyEmailSent(false);
+                setMode('signin');
+                setError(null);
+              }}
+              className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium"
+            >
+              Back to Sign In
+            </button>
           </div>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
 
-          <div>
-            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+              <div>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
 
-          {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
-          {message && <p className="text-teal-600 dark:text-teal-400">{message}</p>}
+              {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium disabled:opacity-50 transition"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-            <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium disabled:opacity-50 transition"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+              </button>
+            </form>
 
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin');
-              setError(null);
-              setMessage(null);
-            }}
-            className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
-          >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
-          </button>
-        </p>
+            <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setError(null);
+                }}
+                className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
+              >
+                {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

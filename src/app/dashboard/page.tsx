@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Archive,
-  ArrowLeft,
   Copy,
   FilePlus2,
   Loader2,
+  LogOut,
   Trash2,
 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
@@ -100,17 +100,15 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Studio</span>
-            </Link>
+            <img
+              src="/icon.png"
+              alt="ResumeVix"
+              className="w-9 h-9 rounded-xl object-cover shadow-sm"
+            />
             <div>
               <h1 className="text-lg font-bold tracking-tight">My Resumes & CVs</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {authUser ? `Synced to ${authUser.email}` : 'Guest Mode (Local Draft)'}
+                {authUser ? `Signed in as ${authUser.email}` : 'Guest Mode (Local Draft)'}
               </p>
             </div>
           </div>
@@ -134,6 +132,21 @@ export default function DashboardPage() {
               <FilePlus2 className="w-4 h-4" />
               <span>New Resume</span>
             </Link>
+            {authUser && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const sb = getSupabaseBrowserClient();
+                  if (sb) await sb.auth.signOut();
+                  router.replace('/');
+                }}
+                title="Sign Out"
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -156,6 +169,22 @@ export default function DashboardPage() {
           <div className="flex items-center justify-center py-16 text-slate-500 gap-2 text-xs">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading cloud resumes...</span>
+          </div>
+        ) : visibleResumes.length === 0 ? (
+          <div className="p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-center space-y-3">
+            <h2 className="font-semibold text-sm">No saved resumes yet</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Create your first ATS resume or academic CV from 21+ customizable templates.
+            </p>
+            <div>
+              <Link
+                href="/create"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                <FilePlus2 className="w-4 h-4" />
+                <span>Create Your First Resume</span>
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

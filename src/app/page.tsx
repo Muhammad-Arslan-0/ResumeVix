@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileText, Loader2, Palette, Wand2 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { TopToolbar } from '@/components/toolbar/TopToolbar';
@@ -10,15 +11,17 @@ import { DesignBySelfPanel } from '@/components/ai/DesignBySelfPanel';
 import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
 import { AISettingsModal } from '@/components/modals/AISettingsModal';
 import { AuthModal } from '@/components/modals/AuthModal';
-import { AuthGate } from '@/components/auth/AuthGate';
+import { LandingPage } from '@/components/landing/LandingPage';
 import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 export default function ResumeVixWorkspace() {
   useCloudAutoSave();
+  const router = useRouter();
 
   const authUser = useResumeStore((s) => s.authUser);
   const authChecking = useResumeStore((s) => s.authChecking);
+  const activeResumeId = useResumeStore((s) => s.activeResumeId);
   const editorTheme = useResumeStore((s) => s.editorTheme);
   const activeTab = useResumeStore((s) => s.activeTab);
   const setActiveTab = useResumeStore((s) => s.setActiveTab);
@@ -33,6 +36,12 @@ export default function ResumeVixWorkspace() {
     else root.classList.remove('dark');
   }, [editorTheme]);
 
+  useEffect(() => {
+    if (!authChecking && isSupabaseConfigured() && authUser && !activeResumeId) {
+      router.replace('/dashboard');
+    }
+  }, [authChecking, authUser, activeResumeId, router]);
+
   if (authChecking) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -42,7 +51,20 @@ export default function ResumeVixWorkspace() {
   }
 
   if (isSupabaseConfigured() && !authUser) {
-    return <AuthGate />;
+    return (
+      <>
+        <LandingPage onOpenAuth={() => setAuthOpen(true)} />
+        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      </>
+    );
+  }
+
+  if (isSupabaseConfigured() && authUser && !activeResumeId) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+      </div>
+    );
   }
 
   return (
