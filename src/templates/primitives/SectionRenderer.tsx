@@ -70,8 +70,8 @@ function SectionHeading({
   if (variant === 'flowcv-banner') {
     return (
       <h2
-        style={styleHeading}
-        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center text-[0.95em] bg-slate-100 text-[var(--rv-text)] py-1 px-3 rounded-[2px] mb-2.5`}
+        style={{ ...styleHeading, color: 'var(--rv-heading-color)' }}
+        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center text-[0.95em] bg-slate-100 py-1 px-3 rounded-[2px] mb-2.5`}
       >
         {title}
       </h2>

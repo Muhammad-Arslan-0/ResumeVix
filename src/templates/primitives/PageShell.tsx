@@ -28,7 +28,21 @@ export const PageShell: React.FC<PageShellProps> = ({
     '--rv-muted': style.mutedColor,
     '--rv-margin-mm': `${style.marginMm}mm`,
     '--rv-section-gap': `${style.sectionSpacingPx}px`,
+    '--rv-name-color': style.accentTargets?.name ? style.accentColor : style.textColor,
+    '--rv-title-color': style.accentTargets?.jobTitle ? style.accentColor : style.textColor,
+    '--rv-heading-color': style.accentTargets?.headings !== false ? style.accentColor : style.textColor,
+    '--rv-icon-color': style.accentTargets?.headerIcons ? style.accentColor : style.textColor,
+    '--rv-date-color': style.accentTargets?.dates ? style.accentColor : style.mutedColor,
+    '--rv-entry-title-color': style.accentTargets?.entryTitle ? style.accentColor : style.textColor,
+    '--rv-entry-subtitle-color': style.accentTargets?.entrySubtitle ? style.accentColor : style.mutedColor,
   } as React.CSSProperties;
+
+  const surfaceStyle: React.CSSProperties =
+    style.colorTarget === 'border' && style.pageBgColor
+      ? { border: `6px solid ${style.pageBgColor}` }
+      : style.colorTarget === 'full' && style.pageBgColor
+        ? { backgroundColor: style.pageBgColor }
+        : {};
 
   if (bare) {
     return (
@@ -36,6 +50,7 @@ export const PageShell: React.FC<PageShellProps> = ({
         className={`text-[var(--rv-text)] box-border ${className}`}
         style={{
           ...cssVars,
+          ...surfaceStyle,
           width: '100%',
           fontFamily: 'var(--rv-font-body)',
           fontSize: 'var(--rv-font-size)',
@@ -52,6 +67,7 @@ export const PageShell: React.FC<PageShellProps> = ({
       className={`resume-page bg-white text-[var(--rv-text)] shadow-xl print:shadow-none mx-auto box-border ${className}`}
       style={{
         ...cssVars,
+        ...surfaceStyle,
         width: widthMm,
         minHeight: minHeightMm,
         padding: 'var(--rv-margin-mm)',

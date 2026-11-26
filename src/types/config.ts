@@ -35,6 +35,18 @@ export interface TemplateStyleTokens {
   headingUppercase?: boolean;
   showPageNumbers?: boolean;
   footerText?: string;
+  colorTarget?: 'full' | 'header' | 'border';
+  pageBgColor?: string;
+  accentTargets?: {
+    name?: boolean;
+    jobTitle?: boolean;
+    headings?: boolean;
+    headerIcons?: boolean;
+    dates?: boolean;
+    entryTitle?: boolean;
+    entrySubtitle?: boolean;
+    linkIcons?: boolean;
+  };
 }
 
 export interface TemplateConfig {

@@ -561,34 +561,126 @@ export const DesignPanel: React.FC = () => {
         )}
 
         {activeNav === 'colors' && (
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-            <h3 className="font-semibold text-sm">Accent Palette</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              {ACCENT_PALETTES.map((p) => (
-                <button
-                  key={p.hex}
-                  type="button"
-                  onClick={() => updateStyleConfig({ accentColor: p.hex })}
-                  title={p.name}
-                  className={`w-7 h-7 rounded-full border-2 transition ${
-                    template.style.accentColor.toLowerCase() === p.hex.toLowerCase()
-                      ? 'border-slate-900 dark:border-white scale-110'
-                      : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: p.hex }}
-                />
-              ))}
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
+            <h3 className="font-semibold text-sm">Colors</h3>
+
+            {/* Surface Target: Full Page / Header / Border */}
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: 'full', label: 'Full Page' },
+                  { id: 'header', label: 'Header' },
+                  { id: 'border', label: 'Border' },
+                ] as const
+              ).map((target) => {
+                const active = (template.style.colorTarget || 'full') === target.id;
+                return (
+                  <button
+                    key={target.id}
+                    type="button"
+                    onClick={() => updateStyleConfig({ colorTarget: target.id })}
+                    className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 transition ${
+                      active
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/30 font-semibold'
+                        : 'border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-10 rounded border ${
+                        target.id === 'border'
+                          ? 'border-4 border-slate-400 bg-white'
+                          : target.id === 'header'
+                            ? 'border-slate-300 bg-gradient-to-b from-slate-300 from-35% to-white to-35%'
+                            : 'border-teal-300 bg-teal-50'
+                      }`}
+                    />
+                    <span className="text-[11px]">{target.label}</span>
+                  </button>
+                );
+              })}
             </div>
-            <label className="flex items-center gap-2 pt-1">
-              <span>Custom Hex:</span>
-              <input
-                type="color"
-                value={template.style.accentColor}
-                onChange={(e) => updateStyleConfig({ accentColor: e.target.value })}
-                className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
-              />
-              <span className="font-mono text-[11px]">{template.style.accentColor}</span>
-            </label>
+
+            {/* Accent Swatches */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateStyleConfig({ accentColor: '#111827', pageBgColor: undefined })}
+                  title="Reset / Monochrome"
+                  className="w-7 h-7 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-[10px] text-slate-500"
+                >
+                  /
+                </button>
+                {ACCENT_PALETTES.map((p) => (
+                  <button
+                    key={p.hex}
+                    type="button"
+                    onClick={() => updateStyleConfig({ accentColor: p.hex })}
+                    title={p.name}
+                    className={`w-7 h-7 rounded-full border-2 transition ${
+                      template.style.accentColor.toLowerCase() === p.hex.toLowerCase()
+                        ? 'border-slate-900 dark:border-white scale-110'
+                        : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: p.hex }}
+                  />
+                ))}
+                <label
+                  title="Custom Color"
+                  className="w-7 h-7 rounded-full overflow-hidden border border-slate-300 cursor-pointer flex items-center justify-center bg-gradient-to-tr from-rose-500 via-amber-400 to-teal-500"
+                >
+                  <input
+                    type="color"
+                    value={template.style.accentColor}
+                    onChange={(e) => updateStyleConfig({ accentColor: e.target.value })}
+                    className="opacity-0 w-full h-full cursor-pointer"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Apply Accent Color Checkboxes */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-xs">Apply Accent Color</h4>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-3">
+                {(
+                  [
+                    { key: 'name', label: 'Name' },
+                    { key: 'jobTitle', label: 'Job title' },
+                    { key: 'headings', label: 'Headings' },
+                    { key: 'headerIcons', label: 'Header icons' },
+                    { key: 'dates', label: 'Dates' },
+                    { key: 'entryTitle', label: 'Entry title' },
+                    { key: 'entrySubtitle', label: 'Entry subtitle' },
+                    { key: 'linkIcons', label: 'Link icons' },
+                  ] as const
+                ).map((opt) => {
+                  const targets = template.style.accentTargets || {};
+                  const checked =
+                    opt.key === 'headings'
+                      ? targets.headings !== false
+                      : Boolean(targets[opt.key]);
+                  return (
+                    <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) =>
+                          updateStyleConfig({
+                            accentTargets: {
+                              ...targets,
+                              [opt.key]: e.target.checked,
+                            },
+                          })
+                        }
+                        className="accent-teal-600 rounded"
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 

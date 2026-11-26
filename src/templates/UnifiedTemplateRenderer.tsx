@@ -86,18 +86,26 @@ function TemplateHeader({
 
     return (
       <header className="text-center pb-3 mb-3">
-        <h1 style={headingStyle} className="text-[2em] font-bold tracking-tight">
+        <h1
+          style={{ ...headingStyle, color: 'var(--rv-name-color)' }}
+          className="text-[2em] font-bold tracking-tight"
+        >
           {profile.fullName || 'Your Name'}
         </h1>
         {profile.headline && (
-          <p className="text-[1.1em] italic text-[var(--rv-text)] mt-0.5">{profile.headline}</p>
+          <p style={{ color: 'var(--rv-title-color)' }} className="text-[1.1em] italic mt-0.5">
+            {profile.headline}
+          </p>
         )}
         <div className="mt-2.5 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[0.86em] text-[var(--rv-text)]">
           {contactChips.map((chip, idx) => {
             const Icon = chip.icon;
             return (
               <span key={idx} className="inline-flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center shrink-0">
+                <span
+                  style={{ borderColor: 'var(--rv-icon-color)', color: 'var(--rv-icon-color)' }}
+                  className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"
+                >
                   <Icon className="w-2.5 h-2.5" />
                 </span>
                 <span>{chip.text}</span>
