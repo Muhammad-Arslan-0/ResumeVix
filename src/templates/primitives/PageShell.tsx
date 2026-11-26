@@ -4,10 +4,16 @@ import { TemplateConfig } from '@/types';
 interface PageShellProps {
   config: TemplateConfig;
   className?: string;
+  bare?: boolean;
   children: React.ReactNode;
 }
 
-export const PageShell: React.FC<PageShellProps> = ({ config, className = '', children }) => {
+export const PageShell: React.FC<PageShellProps> = ({
+  config,
+  className = '',
+  bare = false,
+  children,
+}) => {
   const { style, pageSize } = config;
   const widthMm = pageSize === 'A4' ? '210mm' : '215.9mm';
   const minHeightMm = pageSize === 'A4' ? '297mm' : '279.4mm';
@@ -23,6 +29,23 @@ export const PageShell: React.FC<PageShellProps> = ({ config, className = '', ch
     '--rv-margin-mm': `${style.marginMm}mm`,
     '--rv-section-gap': `${style.sectionSpacingPx}px`,
   } as React.CSSProperties;
+
+  if (bare) {
+    return (
+      <div
+        className={`text-[var(--rv-text)] box-border ${className}`}
+        style={{
+          ...cssVars,
+          width: '100%',
+          fontFamily: 'var(--rv-font-body)',
+          fontSize: 'var(--rv-font-size)',
+          lineHeight: 'var(--rv-line-height)',
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

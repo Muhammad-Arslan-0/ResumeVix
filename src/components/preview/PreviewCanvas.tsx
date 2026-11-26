@@ -6,11 +6,12 @@ import { useResumeStore } from '@/store/useResumeStore';
 import { UnifiedTemplateRenderer } from '@/templates/UnifiedTemplateRenderer';
 import { buildGoogleFontsHref } from '@/lib/fonts';
 
-// 96 DPI approximate page heights in px: A4 = 297mm (~1122.5px), Letter = 11in (1056px)
+// 96 DPI approximate page dimensions in px: A4 = 297mm (~1122.5px), Letter = 11in (1056px)
 const PAGE_HEIGHT_PX = {
-  A4: 1122.5,
+  A4: 1122.52,
   LETTER: 1056,
 };
+const PX_PER_MM = 3.7795275591;
 
 export const PreviewCanvas: React.FC = () => {
   const resume = useResumeStore((s) => s.resume);
@@ -22,37 +23,43 @@ export const PreviewCanvas: React.FC = () => {
   const deferredResume = useDeferredValue(resume);
   const deferredTemplate = useDeferredValue(template);
 
-  const pageRef = useRef<HTMLDivElement>(null);
-  const [pageBreaks, setPageBreaks] = useState<number[]>([]);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [pageCount, setPageCount] = useState(1);
 
   const fontsHref = buildGoogleFontsHref([
     deferredTemplate.style.fontFamily,
     deferredTemplate.style.headingFontFamily || '',
   ]);
 
+  const pageH = PAGE_HEIGHT_PX[deferredTemplate.pageSize];
+  const marginPx = deferredTemplate.style.marginMm * PX_PER_MM;
+  const contentPerPagePx = Math.max(200, pageH - marginPx * 2);
+  const widthMm = deferredTemplate.pageSize === 'A4' ? '210mm' : '215.9mm';
+
   useEffect(() => {
-    const el = pageRef.current;
+    const el = measureRef.current;
     if (!el) return;
-    const pageH = PAGE_HEIGHT_PX[deferredTemplate.pageSize];
-    const observer = new ResizeObserver(() => {
+    const updateCount = () => {
       const totalH = el.scrollHeight;
-      const count = Math.floor((totalH - 12) / pageH);
-      const breaks: number[] = [];
-      for (let i = 1; i <= count; i++) {
-        breaks.push(i * pageH);
-      }
-      setPageBreaks(breaks);
-    });
+      const count = Math.max(1, Math.ceil((totalH - 4) / contentPerPagePx));
+      setPageCount(count);
+    };
+    updateCount();
+    const observer = new ResizeObserver(updateCount);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deferredTemplate.pageSize, deferredResume, deferredTemplate]);
+  }, [contentPerPagePx, deferredResume, deferredTemplate]);
 
   return (
     <div className="relative flex-1 h-full overflow-auto bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 print-container">
       {fontsHref && <link rel="stylesheet" href={fontsHref} />}
 
       {/* Floating Zoom Controls */}
-      <div className="no-print sticky top-2 z-20 flex justify-end pointer-events-none mb-2">
+      <div className="no-print sticky top-2 z-20 flex justify-between items-center pointer-events-none mb-3">
+        <span className="pointer-events-auto text-[11px] font-medium px-2.5 py-1 rounded-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300">
+          {pageCount} {pageCount === 1 ? 'Page' : 'Pages'} ({deferredTemplate.pageSize})
+        </span>
+
         <div className="pointer-events-auto inline-flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm text-xs">
           <button
             type="button"
@@ -85,30 +92,64 @@ export const PreviewCanvas: React.FC = () => {
         </div>
       </div>
 
-      {/* Scaled Preview Wrapper */}
+      {/* Offscreen Measurement Container (screen only) */}
       <div
-        className="mx-auto origin-top transition-transform duration-100 print:transform-none"
+        aria-hidden="true"
+        className="no-print fixed -left-[9999px] top-0 pointer-events-none opacity-0"
         style={{
-          transform: `scale(${previewZoom})`,
-          width: deferredTemplate.pageSize === 'A4' ? '210mm' : '215.9mm',
+          width: `calc(${widthMm} - ${deferredTemplate.style.marginMm * 2}mm)`,
         }}
       >
-        <div ref={pageRef} className="relative">
-          <UnifiedTemplateRenderer data={deferredResume} config={deferredTemplate} />
-
-          {/* Visual Multi-Page Break Guides (screen only) */}
-          {pageBreaks.map((topPx, idx) => (
-            <div
-              key={idx}
-              className="no-print absolute left-0 right-0 border-t-2 border-dashed border-teal-500/70 pointer-events-none flex justify-end"
-              style={{ top: `${topPx}px` }}
-            >
-              <span className="bg-teal-600 text-white text-[10px] font-medium px-2 py-0.5 rounded-b shadow">
-                Page {idx + 2}
-              </span>
-            </div>
-          ))}
+        <div ref={measureRef}>
+          <UnifiedTemplateRenderer data={deferredResume} config={deferredTemplate} bare />
         </div>
+      </div>
+
+      {/* Screen Preview: Distinct Separated White A4/Letter Paper Sheets */}
+      <div
+        className="no-print mx-auto origin-top transition-transform duration-100 flex flex-col gap-6 pb-16"
+        style={{
+          transform: `scale(${previewZoom})`,
+          width: widthMm,
+        }}
+      >
+        {Array.from({ length: pageCount }).map((_, pageIdx) => (
+          <div key={pageIdx} className="flex flex-col items-center">
+            <div
+              className="bg-white shadow-xl rounded-[2px] box-border overflow-hidden"
+              style={{
+                width: widthMm,
+                height: `${pageH}px`,
+                padding: `${deferredTemplate.style.marginMm}mm`,
+              }}
+            >
+              <div
+                className="overflow-hidden"
+                style={{ height: `${contentPerPagePx}px` }}
+              >
+                <div
+                  style={{
+                    transform: `translateY(-${pageIdx * contentPerPagePx}px)`,
+                  }}
+                >
+                  <UnifiedTemplateRenderer
+                    data={deferredResume}
+                    config={deferredTemplate}
+                    bare
+                  />
+                </div>
+              </div>
+            </div>
+            <span className="mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              Page {pageIdx + 1} of {pageCount}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Print-Only Natural Flow (exact vector PDF pagination with @page rules) */}
+      <div className="hidden print:block">
+        <UnifiedTemplateRenderer data={deferredResume} config={deferredTemplate} />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { PageShell, SectionRenderer } from './primitives';
 interface TemplateProps {
   data: ResumeData;
   config: TemplateConfig;
+  bare?: boolean;
 }
 
 const SIDEBAR_SECTION_TYPES = new Set(['skills', 'education', 'publications']);
@@ -165,7 +166,8 @@ function TemplateHeader({
   );
 }
 
-export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ data, config }) => {
+export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
+  ({ data, config, bare = false }) => {
   const meta = getTemplateMeta(config.templateId);
   const orderedSections = [...config.sections]
     .filter((s) => s.visible)
@@ -190,7 +192,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
     const isLeft = meta.layout === 'two-column-left';
 
     return (
-      <PageShell config={config} className={`template-${meta.id}`}>
+      <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
         <TemplateHeader data={data} meta={meta} />
         <div
           className="grid gap-5 items-start"
@@ -258,7 +260,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(({ da
 
   // Single-column & banner-header
   return (
-    <PageShell config={config} className={`template-${meta.id}`}>
+    <PageShell config={config} bare={bare} className={`template-${meta.id}`}>
       <TemplateHeader data={data} meta={meta} />
       <main className="flex flex-col gap-[var(--rv-section-gap)]">
         {orderedSections.map((section) => (
