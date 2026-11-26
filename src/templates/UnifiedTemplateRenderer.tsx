@@ -304,6 +304,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    dateFormat={config.style.dateFormat}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -318,6 +319,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    dateFormat={config.style.dateFormat}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -335,6 +337,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    dateFormat={config.style.dateFormat}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />
@@ -349,6 +352,7 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
                     variant={effectiveVariant}
                     entryLayout={effectiveEntryLayout}
                     headingUppercase={headingUppercase}
+                    dateFormat={config.style.dateFormat}
                     sectionCustomizations={config.style.sectionCustomizations}
                     highlightAuthorName={highlightName}
                   />

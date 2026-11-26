@@ -169,14 +169,52 @@ export const DesignPanel: React.FC = () => {
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
             <h3 className="font-semibold text-sm">Document Settings</h3>
             <div>
+              <label className="block font-medium mb-1">Language</label>
+              <select
+                value={template.style.documentLanguage || 'en-US'}
+                onChange={(e) =>
+                  updateStyleConfig({
+                    documentLanguage: e.target.value as NonNullable<
+                      typeof template.style.documentLanguage
+                    >,
+                  })
+                }
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
+              >
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Date Format</label>
+              <select
+                value={template.style.dateFormat || 'YYYY/MM'}
+                onChange={(e) =>
+                  updateStyleConfig({
+                    dateFormat: e.target.value as NonNullable<typeof template.style.dateFormat>,
+                  })
+                }
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
+              >
+                <option value="YYYY/MM">YYYY/MM (2024/01)</option>
+                <option value="YYYY/MM/DD">YYYY/MM/DD (2024/01/01)</option>
+                <option value="MM/YYYY">MM/YYYY (01/2024)</option>
+                <option value="MMM YYYY">MMM YYYY (Jan 2024)</option>
+                <option value="YYYY">YYYY (2024)</option>
+              </select>
+            </div>
+            <div>
               <label className="block font-medium mb-1">Page Format</label>
               <select
                 value={template.pageSize}
                 onChange={(e) => setPageSize(e.target.value as 'A4' | 'LETTER')}
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2"
               >
-                <option value="A4">A4 (210 × 297 mm)</option>
-                <option value="LETTER">US Letter (8.5 × 11 in)</option>
+                <option value="A4">A4</option>
+                <option value="LETTER">US Letter</option>
               </select>
             </div>
             <div>

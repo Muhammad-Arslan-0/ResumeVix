@@ -79,6 +79,8 @@ export interface TemplateStyleTokens {
     skillsLayout?: 'grid' | 'rows' | 'compact' | 'bubble';
     skillsGridCols?: 1 | 2 | 3 | 4;
   };
+  documentLanguage?: 'en-US' | 'en-GB' | 'de' | 'fr' | 'es';
+  dateFormat?: 'YYYY/MM' | 'YYYY/MM/DD' | 'MM/YYYY' | 'MMM YYYY' | 'YYYY';
 }
 
 export interface TemplateConfig {

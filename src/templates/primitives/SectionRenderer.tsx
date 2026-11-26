@@ -9,8 +9,41 @@ interface SectionRendererProps {
   variant: TemplateDefinition['variant'];
   entryLayout?: TemplateDefinition['entryLayout'];
   headingUppercase?: boolean;
+  dateFormat?: TemplateConfig['style']['dateFormat'];
   sectionCustomizations?: TemplateConfig['style']['sectionCustomizations'];
   highlightAuthorName?: string;
+}
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatResumeDate(
+  raw: string | undefined,
+  format: TemplateConfig['style']['dateFormat'] = 'YYYY/MM'
+): string {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (/present|current|now/i.test(trimmed)) return trimmed;
+  const match = trimmed.match(/^(\d{4})(?:[-/](\d{1,2})(?:[-/](\d{1,2}))?)?$/);
+  if (!match) return trimmed;
+  const [, yyyy, mmRaw, ddRaw] = match;
+  if (!mmRaw) return yyyy;
+  const mm = mmRaw.padStart(2, '0');
+  const dd = (ddRaw || '01').padStart(2, '0');
+  switch (format) {
+    case 'YYYY/MM/DD':
+      return `${yyyy}/${mm}/${dd}`;
+    case 'MM/YYYY':
+      return `${mm}/${yyyy}`;
+    case 'MMM YYYY': {
+      const idx = Math.max(0, Math.min(11, parseInt(mm, 10) - 1));
+      return `${MONTHS_SHORT[idx]} ${yyyy}`;
+    }
+    case 'YYYY':
+      return yyyy;
+    case 'YYYY/MM':
+    default:
+      return `${yyyy}/${mm}`;
+  }
 }
 
 function SectionHeading({
@@ -96,6 +129,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
     variant,
     entryLayout = 'stacked',
     headingUppercase = true,
+    dateFormat = 'YYYY/MM',
     sectionCustomizations,
     highlightAuthorName,
   }) => {
@@ -140,7 +174,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                   >
                     <div className="text-[0.88em] text-[var(--rv-muted)] leading-snug">
                       <div>
-                        {item.startDate} – {item.current ? 'Present' : item.endDate}
+                        {formatResumeDate(item.startDate, dateFormat)} –{' '}
+                        {item.current ? 'Present' : formatResumeDate(item.endDate, dateFormat)}
                       </div>
                       {item.location && <div className="mt-0.5">{item.location}</div>}
                     </div>
@@ -177,7 +212,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                         )}
                       </div>
                       <span className="text-[0.88em] text-[var(--rv-muted)] whitespace-nowrap">
-                        {item.startDate} – {item.current ? 'Present' : item.endDate}
+                        {formatResumeDate(item.startDate, dateFormat)} –{' '}
+                        {item.current ? 'Present' : formatResumeDate(item.endDate, dateFormat)}
                       </span>
                     </div>
                     {item.location && (
@@ -213,7 +249,8 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                   >
                     <div className="text-[0.88em] text-[var(--rv-muted)] leading-snug">
                       <div>
-                        {item.startDate} – {item.endDate}
+                        {formatResumeDate(item.startDate, dateFormat)} –{' '}
+                        {formatResumeDate(item.endDate, dateFormat)}
                       </div>
                       {item.location && <div className="mt-0.5">{item.location}</div>}
                     </div>
