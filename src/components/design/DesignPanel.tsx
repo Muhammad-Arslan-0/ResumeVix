@@ -469,25 +469,119 @@ export const DesignPanel: React.FC = () => {
 
         {activeNav === 'font-size' && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
-            <h3 className="font-semibold text-sm">Font Size & Line Height</h3>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Base Font Size</span>
-                <span className="font-mono">{template.style.fontSizePt}pt</span>
+            <h3 className="font-semibold text-sm">Font Size</h3>
+
+            {/* Base Font Size */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Base Font Size</span>
+                <span className="font-mono text-slate-600 dark:text-slate-300">
+                  {template.style.fontSizePt}pt
+                </span>
               </div>
-              <input
-                type="range"
-                min={8.5}
-                max={12}
-                step={0.5}
-                value={template.style.fontSizePt}
-                onChange={(e) => updateStyleConfig({ fontSizePt: parseFloat(e.target.value) })}
-                className="w-full accent-teal-600"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={8.5}
+                  max={12.5}
+                  step={0.5}
+                  value={template.style.fontSizePt}
+                  onChange={(e) => updateStyleConfig({ fontSizePt: parseFloat(e.target.value) })}
+                  className="flex-1 accent-teal-600"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      fontSizePt: Math.max(8.5, +(template.style.fontSizePt - 0.5).toFixed(1)),
+                    })
+                  }
+                  aria-label="Decrease base font size"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateStyleConfig({
+                      fontSizePt: Math.min(12.5, +(template.style.fontSizePt + 0.5).toFixed(1)),
+                    })
+                  }
+                  aria-label="Increase base font size"
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>Line Height</span>
+
+            {/* Relative Offset Steppers */}
+            {(
+              [
+                { key: 'fullNamePt', label: 'Full Name', min: 4, max: 16, def: 10 },
+                { key: 'titlePt', label: 'Professional Title', min: 0, max: 10, def: 1 },
+                { key: 'sectionHeadingPt', label: 'Section Headings', min: -1, max: 6, def: 0 },
+                { key: 'entryHeaderPt', label: 'Entry Header', min: 0, max: 4, def: 0 },
+              ] as const
+            ).map((item) => {
+              const offsets = template.style.fontOffsets || {};
+              const val = offsets[item.key] ?? item.def;
+              return (
+                <div key={item.key} className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{item.label}</span>
+                    <span className="font-mono text-slate-600 dark:text-slate-300">
+                      {val >= 0 ? `+${val}pt` : `${val}pt`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={item.min}
+                      max={item.max}
+                      step={1}
+                      value={val}
+                      onChange={(e) =>
+                        updateStyleConfig({
+                          fontOffsets: { ...offsets, [item.key]: parseInt(e.target.value, 10) },
+                        })
+                      }
+                      className="flex-1 accent-teal-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          fontOffsets: { ...offsets, [item.key]: Math.max(item.min, val - 1) },
+                        })
+                      }
+                      aria-label={`Decrease ${item.label}`}
+                      className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateStyleConfig({
+                          fontOffsets: { ...offsets, [item.key]: Math.min(item.max, val + 1) },
+                        })
+                      }
+                      aria-label={`Increase ${item.label}`}
+                      className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Line Height */}
+            <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between">
+                <span className="font-semibold">Line Height</span>
                 <span className="font-mono">{template.style.lineHeight}</span>
               </div>
               <input

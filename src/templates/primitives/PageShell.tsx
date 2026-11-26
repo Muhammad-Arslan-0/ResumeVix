@@ -35,6 +35,10 @@ export const PageShell: React.FC<PageShellProps> = ({
     '--rv-date-color': style.accentTargets?.dates ? style.accentColor : style.mutedColor,
     '--rv-entry-title-color': style.accentTargets?.entryTitle ? style.accentColor : style.textColor,
     '--rv-entry-subtitle-color': style.accentTargets?.entrySubtitle ? style.accentColor : style.mutedColor,
+    '--rv-name-size': `${style.fontSizePt + (style.fontOffsets?.fullNamePt ?? 10)}pt`,
+    '--rv-title-size': `${style.fontSizePt + (style.fontOffsets?.titlePt ?? 1)}pt`,
+    '--rv-section-heading-size': `${style.fontSizePt + (style.fontOffsets?.sectionHeadingPt ?? 0)}pt`,
+    '--rv-entry-header-size': `${style.fontSizePt + (style.fontOffsets?.entryHeaderPt ?? 0)}pt`,
   } as React.CSSProperties;
 
   const surfaceStyle: React.CSSProperties =

@@ -104,8 +104,12 @@ function SectionHeading({
   if (variant === 'flowcv-banner') {
     return (
       <h2
-        style={{ ...styleHeading, color: 'var(--rv-heading-color)' }}
-        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center text-[0.95em] bg-slate-100 py-1 px-3 rounded-[2px] mb-2.5`}
+        style={{
+          ...styleHeading,
+          color: 'var(--rv-heading-color)',
+          fontSize: 'var(--rv-section-heading-size)',
+        }}
+        className={`rv-section-heading break-after-avoid font-bold tracking-wider ${caseClass} text-center bg-slate-100 py-1 px-3 rounded-[2px] mb-2.5`}
       >
         {title}
       </h2>
@@ -180,7 +184,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                       {item.location && <div className="mt-0.5">{item.location}</div>}
                     </div>
                     <div>
-                      <div className="text-[1em]">
+                      <div style={{ fontSize: 'var(--rv-entry-header-size)' }}>
                         {expCompanyFirst ? (
                           <>
                             <span className="font-bold">{item.company}</span>

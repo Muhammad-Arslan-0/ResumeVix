@@ -129,15 +129,22 @@ function TemplateHeader({
           }
         >
           <h1
-            style={{ ...headingStyle, color: 'var(--rv-name-color)' }}
-            className={`text-[2em] ${nameBold ? 'font-bold' : 'font-normal'} tracking-tight`}
+            style={{
+              ...headingStyle,
+              color: 'var(--rv-name-color)',
+              fontSize: 'var(--rv-name-size)',
+            }}
+            className={`${nameBold ? 'font-bold' : 'font-normal'} tracking-tight leading-tight`}
           >
             {profile.fullName || 'Your Name'}
           </h1>
           {profile.headline && (
             <p
-              style={{ color: 'var(--rv-title-color)' }}
-              className={`text-[1.1em] ${titleItalic ? 'italic' : 'not-italic'} ${
+              style={{
+                color: 'var(--rv-title-color)',
+                fontSize: 'var(--rv-title-size)',
+              }}
+              className={`${titleItalic ? 'italic' : 'not-italic'} ${
                 titleSameLine ? '' : 'mt-0.5'
               }`}
             >

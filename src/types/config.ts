@@ -81,6 +81,12 @@ export interface TemplateStyleTokens {
   };
   documentLanguage?: 'en-US' | 'en-GB' | 'de' | 'fr' | 'es';
   dateFormat?: 'YYYY/MM' | 'YYYY/MM/DD' | 'MM/YYYY' | 'MMM YYYY' | 'YYYY';
+  fontOffsets?: {
+    fullNamePt?: number;
+    titlePt?: number;
+    sectionHeadingPt?: number;
+    entryHeaderPt?: number;
+  };
 }
 
 export interface TemplateConfig {
