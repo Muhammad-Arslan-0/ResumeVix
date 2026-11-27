@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Download,
   FileJson,
+  FileSpreadsheet,
   FileText,
   FileUp,
   FolderKanban,
@@ -22,6 +23,8 @@ import {
 import { useResumeStore } from '@/store/useResumeStore';
 import { exportResumeToJson, parseImportedJson } from '@/lib/export/json';
 import { downloadResumePdf } from '@/lib/export/pdf';
+import { parsePdfToResumeData } from '@/lib/import/pdfParser';
+import { parseWordToResumeData } from '@/lib/import/wordParser';
 import { getProviderMeta } from '@/lib/ai/providers';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { SyncStatusBadge } from './SyncStatusBadge';
@@ -55,21 +58,32 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const undo = useResumeStore((s) => s.undo);
   const redo = useResumeStore((s) => s.redo);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const wordInputRef = useRef<HTMLInputElement>(null);
+  const importMenuRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
-    if (!exportMenuOpen) return;
+    if (!exportMenuOpen && !importMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false);
       }
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setImportMenuOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setExportMenuOpen(false);
+      if (e.key === 'Escape') {
+        setExportMenuOpen(false);
+        setImportMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
@@ -77,22 +91,46 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [exportMenuOpen]);
+  }, [exportMenuOpen, importMenuOpen]);
 
   const providerMeta = getProviderMeta(aiConfig.provider);
   const hasKey = Boolean(aiConfig.apiKey.trim()) || aiConfig.provider === 'custom';
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportByKind = async (
+    kind: 'pdf' | 'word' | 'json',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportError(null);
+    setIsImporting(true);
     try {
-      const { resume: importedResume, template: importedTemplate } =
-        await parseImportedJson(file);
-      importResumeBundle(importedResume, importedTemplate);
+      if (kind === 'json') {
+        const { resume: importedResume, template: importedTemplate } =
+          await parseImportedJson(file);
+        importResumeBundle(importedResume, importedTemplate);
+      } else {
+        const { data } =
+          kind === 'pdf'
+            ? await parsePdfToResumeData(file, aiConfig)
+            : await parseWordToResumeData(file, aiConfig);
+
+        const nextTemplate =
+          data.languages && data.languages.length > 0
+            ? {
+                ...template,
+                sections: template.sections.map((s) =>
+                  s.id === 'languages' ? { ...s, visible: true } : s
+                ),
+              }
+            : template;
+
+        importResumeBundle(data, nextTemplate);
+      }
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Failed to import JSON');
+      setImportError(err instanceof Error ? err.message : `Failed to import ${kind.toUpperCase()}`);
     } finally {
+      setIsImporting(false);
       e.target.value = '';
     }
   };
@@ -257,21 +295,110 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         </button>
 
         <input
-          ref={fileInputRef}
+          ref={pdfInputRef}
           type="file"
-          accept="application/json,.json"
-          onChange={handleImport}
+          accept="application/pdf,.pdf"
+          onChange={(e) => handleImportByKind('pdf', e)}
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Import JSON"
-          title="Import JSON Backup"
-          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-        >
-          <FileUp className="w-4 h-4" />
-        </button>
+        <input
+          ref={wordInputRef}
+          type="file"
+          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={(e) => handleImportByKind('word', e)}
+          className="hidden"
+        />
+        <input
+          ref={jsonInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={(e) => handleImportByKind('json', e)}
+          className="hidden"
+        />
+
+        <div ref={importMenuRef} className="relative">
+          <button
+            type="button"
+            disabled={isImporting}
+            onClick={() => setImportMenuOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={importMenuOpen}
+            title="Import CV from PDF, Word, or JSON"
+            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-60 transition"
+          >
+            {isImporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileUp className="w-3.5 h-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {isImporting ? 'Importing...' : 'Import CV'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+          </button>
+
+          {importMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Import CV options"
+              className="absolute right-0 mt-1.5 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1.5 z-50"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setImportMenuOpen(false);
+                  pdfInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                <div>
+                  <div className="font-medium">From PDF</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Extract & autofill (.pdf)
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setImportMenuOpen(false);
+                  wordInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <div>
+                  <div className="font-medium">From Word</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Word document (.docx)
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setImportMenuOpen(false);
+                  jsonInputRef.current?.click();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <FileJson className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                <div>
+                  <div className="font-medium">From JSON</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    ResumeVix backup (.json)
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
 
         <button
           type="button"

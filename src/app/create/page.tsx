@@ -1,9 +1,20 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, FilePlus2, FileUp, Loader2, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  FileJson,
+  FilePlus2,
+  FileSpreadsheet,
+  FileText,
+  FileUp,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
 import { isSupabaseConfigured, getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -16,6 +27,8 @@ import {
 } from '@/data/presets';
 import { createCloudResume } from '@/lib/sync/resumes';
 import { parsePdfToResumeData } from '@/lib/import/pdfParser';
+import { parseWordToResumeData } from '@/lib/import/wordParser';
+import { parseImportedJson } from '@/lib/export/json';
 import { PageSize, ResumeData, TemplateConfig } from '@/types';
 
 type StartingPreset = 'tech' | 'academic' | 'blank' | 'pdf';
@@ -37,14 +50,37 @@ export default function CreateResumePage() {
   const [error, setError] = useState<string | null>(null);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const wordInputRef = useRef<HTMLInputElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
   const [pdfParsing, setPdfParsing] = useState(false);
   const [importedResume, setImportedResume] = useState<ResumeData | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!importMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setImportMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImportMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [importMenuOpen]);
+
   const createAndOpenStudio = async (
     baseResume: ResumeData,
     chosenTitle: string,
-    chosenPreset: StartingPreset
+    chosenPreset: StartingPreset,
+    overrideTemplate?: TemplateConfig
   ) => {
     baseResume.id = `resume-${Date.now()}`;
     baseResume.title = chosenTitle.trim() || 'Untitled Resume';
@@ -52,12 +88,14 @@ export default function CreateResumePage() {
 
     const chosenTemplateId = chosenPreset === 'academic' ? 'academic-cv' : 'ats-minimal';
     const meta = getTemplateMeta(chosenTemplateId);
-    const baseConfig: TemplateConfig = {
-      ...JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_CONFIG)),
-      templateId: chosenTemplateId,
-      pageSize,
-    };
-    if (meta?.defaultStyle) {
+    const baseConfig: TemplateConfig = overrideTemplate
+      ? JSON.parse(JSON.stringify(overrideTemplate))
+      : {
+          ...JSON.parse(JSON.stringify(DEFAULT_TEMPLATE_CONFIG)),
+          templateId: chosenTemplateId,
+          pageSize,
+        };
+    if (!overrideTemplate && meta?.defaultStyle) {
       Object.assign(baseConfig.style, meta.defaultStyle);
     }
     if (chosenPreset === 'academic') {
@@ -86,24 +124,41 @@ export default function CreateResumePage() {
     router.push('/');
   };
 
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportUpload = async (
+    kind: 'pdf' | 'word' | 'json',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPdfParsing(true);
     setError(null);
     setImportSummary(null);
     try {
-      const { data } = await parsePdfToResumeData(file, aiConfig);
-      setImportedResume(data);
-      setPreset('pdf');
-      const finalTitle = title === 'My New Resume' && data.title ? data.title : title;
-      setTitle(finalTitle);
-      await createAndOpenStudio(data, finalTitle, 'pdf');
+      if (kind === 'json') {
+        const { resume: jsonResume, template: jsonTemplate } =
+          await parseImportedJson(file);
+        setImportedResume(jsonResume);
+        setPreset('pdf');
+        const finalTitle =
+          title === 'My New Resume' && jsonResume.title ? jsonResume.title : title;
+        setTitle(finalTitle);
+        await createAndOpenStudio(jsonResume, finalTitle, 'pdf', jsonTemplate);
+      } else {
+        const { data } =
+          kind === 'pdf'
+            ? await parsePdfToResumeData(file, aiConfig)
+            : await parseWordToResumeData(file, aiConfig);
+        setImportedResume(data);
+        setPreset('pdf');
+        const finalTitle = title === 'My New Resume' && data.title ? data.title : title;
+        setTitle(finalTitle);
+        await createAndOpenStudio(data, finalTitle, 'pdf');
+      }
     } catch (err) {
       const msg =
         err instanceof Error
           ? err.message
-          : (err as { message?: string })?.message || 'Failed to parse PDF';
+          : (err as { message?: string })?.message || `Failed to import ${kind.toUpperCase()}`;
       setError(msg);
       setPdfParsing(false);
     } finally {
@@ -264,41 +319,123 @@ export default function CreateResumePage() {
                 </button>
               ))}
 
-              {/* Import Previous CV (PDF) */}
+              {/* Import Previous CV (PDF / Word / JSON) */}
               <input
                 ref={pdfInputRef}
                 type="file"
                 accept="application/pdf,.pdf"
-                onChange={handlePdfUpload}
+                onChange={(e) => handleImportUpload('pdf', e)}
                 className="hidden"
               />
-              <button
-                type="button"
-                onClick={() => pdfInputRef.current?.click()}
-                disabled={pdfParsing}
-                className={`text-left p-3.5 rounded-xl border transition ${
-                  preset === 'pdf'
-                    ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/30 ring-1 ring-teal-600'
-                    : 'border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500'
-                }`}
-              >
-                <div className="font-semibold flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5">
-                    {pdfParsing ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+              <input
+                ref={wordInputRef}
+                type="file"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(e) => handleImportUpload('word', e)}
+                className="hidden"
+              />
+              <input
+                ref={jsonInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={(e) => handleImportUpload('json', e)}
+                className="hidden"
+              />
+              <div ref={importMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setImportMenuOpen((prev) => !prev)}
+                  disabled={pdfParsing}
+                  aria-haspopup="menu"
+                  aria-expanded={importMenuOpen}
+                  className={`w-full h-full text-left p-3.5 rounded-xl border transition ${
+                    preset === 'pdf'
+                      ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/30 ring-1 ring-teal-600'
+                      : 'border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500'
+                  }`}
+                >
+                  <div className="font-semibold flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5">
+                      {pdfParsing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                      ) : (
+                        <FileUp className="w-3.5 h-3.5 text-teal-600" />
+                      )}
+                      <span>Import CV</span>
+                    </span>
+                    {preset === 'pdf' ? (
+                      <Check className="w-3.5 h-3.5 text-teal-600" />
                     ) : (
-                      <FileUp className="w-3.5 h-3.5 text-teal-600" />
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                     )}
-                    <span>Import PDF CV</span>
-                  </span>
-                  {preset === 'pdf' && <Check className="w-3.5 h-3.5 text-teal-600" />}
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  {pdfParsing
-                    ? 'Extracting & autofilling details...'
-                    : 'Upload your previous PDF CV to autofill your details.'}
-                </p>
-              </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {pdfParsing
+                      ? 'Extracting & autofilling details...'
+                      : 'Import from PDF, Word (.docx), or JSON.'}
+                  </p>
+                </button>
+
+                {importMenuOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Import CV options"
+                    className="absolute left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1.5 z-40"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setImportMenuOpen(false);
+                        pdfInputRef.current?.click();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                      <div>
+                        <div className="font-medium">From PDF</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Extract & autofill (.pdf)
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setImportMenuOpen(false);
+                        wordInputRef.current?.click();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <div>
+                        <div className="font-medium">From Word</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Word document (.docx)
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setImportMenuOpen(false);
+                        jsonInputRef.current?.click();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <FileJson className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                      <div>
+                        <div className="font-medium">From JSON</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                          ResumeVix backup (.json)
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {importSummary && (

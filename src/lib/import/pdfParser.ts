@@ -421,17 +421,11 @@ export function parseResumeTextHeuristic(
   };
 }
 
-export async function parsePdfToResumeData(
-  file: File,
+export async function parseExtractedResumeText(
+  rawText: string,
+  links: string[],
   aiConfig: AIConfig
 ): Promise<{ data: ResumeData; usedAI: boolean }> {
-  const { text: rawText, links } = await extractTextFromPdf(file);
-  if (!rawText || rawText.length < 20) {
-    throw new Error(
-      'Could not extract selectable text from this PDF. Please ensure it is not a scanned image.'
-    );
-  }
-
   const systemPrompt = `You are an expert resume & academic CV parser.
 Extract structured details from the provided CV text and embedded links into valid JSON matching:
 {
@@ -536,4 +530,17 @@ Preserve factual details accurately.`;
   } catch {
     return { data: parseResumeTextHeuristic(rawText, links), usedAI: false };
   }
+}
+
+export async function parsePdfToResumeData(
+  file: File,
+  aiConfig: AIConfig
+): Promise<{ data: ResumeData; usedAI: boolean }> {
+  const { text: rawText, links } = await extractTextFromPdf(file);
+  if (!rawText || rawText.length < 20) {
+    throw new Error(
+      'Could not extract selectable text from this PDF. Please ensure it is not a scanned image.'
+    );
+  }
+  return parseExtractedResumeText(rawText, links, aiConfig);
 }
