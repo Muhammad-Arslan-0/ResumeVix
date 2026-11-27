@@ -584,31 +584,100 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
           <section className="rv-section break-inside-avoid">
             {renderHeading()}
             {effectiveSkillsLayout === 'grid' ? (
-              <div className={`grid ${gridColsClass} gap-x-5 gap-y-2.5 text-[0.93em]`}>
-                {visibleItems.map((grp) => (
-                  <div key={grp.id}>
-                    <div className="font-bold">{grp.category}</div>
-                    <div className="italic text-[var(--rv-muted)] leading-snug">
-                      {grp.items.join(', ')}
+              visibleItems.length === 1 && cols > 1 ? (
+                (() => {
+                  const grp = visibleItems[0];
+                  const tokens = grp.items
+                    .flatMap((item) => item.split(','))
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  return (
+                    <div className="text-[0.93em]">
+                      {grp.category && <div className="font-bold mb-1">{grp.category}</div>}
+                      <div className={`grid ${gridColsClass} gap-x-5 gap-y-1 italic text-[var(--rv-muted)] leading-snug`}>
+                        {tokens.map((sk, i) => (
+                          <div key={i}>{sk}</div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  );
+                })()
+              ) : (
+                <div className={`grid ${gridColsClass} gap-x-5 gap-y-2.5 text-[0.93em]`}>
+                  {visibleItems.map((grp) => (
+                    <div key={grp.id}>
+                      <div className="font-bold">{grp.category}</div>
+                      <div className="italic text-[var(--rv-muted)] leading-snug">
+                        {grp.items.join(', ')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : effectiveSkillsLayout === 'bubble' ? (
-              <div className="flex flex-col gap-1.5">
-                {visibleItems.map((grp) => (
-                  <div key={grp.id} className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-semibold text-[0.9em] mr-1">{grp.category}:</span>
-                    {grp.items.map((sk, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 text-[0.85em] rounded-full border border-gray-300 bg-gray-50"
-                      >
-                        {sk}
-                      </span>
-                    ))}
-                  </div>
-                ))}
+              <div className="flex flex-col gap-2">
+                {visibleItems.map((grp) => {
+                  const tokens = grp.items
+                    .flatMap((item) => item.split(','))
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  return (
+                    <div key={grp.id} className="flex flex-wrap items-center gap-1.5">
+                      {grp.category && (
+                        <span className="font-semibold text-[0.9em] mr-1">{grp.category}:</span>
+                      )}
+                      {tokens.map((sk, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 text-[0.85em] rounded-full border border-gray-300 bg-gray-50"
+                        >
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : effectiveSkillsLayout === 'level' ? (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[0.93em]">
+                {visibleItems.map((grp) => {
+                  const pctMap: Record<string, number> = {
+                    beginner: 20,
+                    amateur: 40,
+                    competent: 60,
+                    proficient: 80,
+                    expert: 100,
+                  };
+                  const pct = grp.level
+                    ? pctMap[grp.level.toLowerCase()] ?? 75
+                    : 80;
+                  return (
+                    <div key={grp.id} className="space-y-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-bold">{grp.category}</span>
+                        {grp.level && (
+                          <span className="text-[0.82em] text-[var(--rv-muted)]">
+                            {grp.level}
+                          </span>
+                        )}
+                      </div>
+                      {grp.items.filter(Boolean).length > 0 && (
+                        <div className="text-[0.85em] text-[var(--rv-muted)] leading-snug">
+                          {grp.items.filter(Boolean).join(', ')}
+                        </div>
+                      )}
+                      <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: 'var(--rv-accent)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : effectiveSkillsLayout === 'compact' ? (
               <p className="text-[0.93em] leading-relaxed">

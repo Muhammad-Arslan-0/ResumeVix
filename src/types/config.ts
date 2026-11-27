@@ -84,7 +84,7 @@ export interface TemplateStyleTokens {
     showSummaryHeading?: boolean;
     experienceTitleOrder?: 'role-first' | 'company-first';
     educationTitleOrder?: 'degree-first' | 'school-first';
-    skillsLayout?: 'grid' | 'rows' | 'compact' | 'bubble';
+    skillsLayout?: 'grid' | 'rows' | 'compact' | 'bubble' | 'level';
     skillsGridCols?: 1 | 2 | 3 | 4;
   };
   documentLanguage?: 'en-US' | 'en-GB' | 'de' | 'fr' | 'es';

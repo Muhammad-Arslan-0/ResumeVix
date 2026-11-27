@@ -1739,13 +1739,14 @@ export const DesignPanel: React.FC = () => {
             {/* Skills Card */}
             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5">
               <h3 className="font-semibold text-sm">Skills</h3>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {(
                   [
                     { id: 'grid', label: 'Grid' },
                     { id: 'rows', label: 'Rows' },
                     { id: 'compact', label: 'Compact' },
                     { id: 'bubble', label: 'Bubble' },
+                    { id: 'level', label: 'Level' },
                   ] as const
                 ).map((opt) => {
                   const active =

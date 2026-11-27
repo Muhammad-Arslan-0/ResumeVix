@@ -524,6 +524,10 @@ export const UnifiedTemplateRenderer: React.FC<TemplateProps> = React.memo(
             variant={effectiveVariant}
             entryLayout={effectiveEntryLayout}
             headingUppercase={headingUppercase}
+            headingIconStyle={config.style.headingIconStyle}
+            dateFormat={config.style.dateFormat}
+            entryConfig={config.style.entryConfig}
+            sectionCustomizations={config.style.sectionCustomizations}
             highlightAuthorName={highlightName}
           />
         ))}
