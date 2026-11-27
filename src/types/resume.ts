@@ -62,6 +62,7 @@ export interface ExperienceItem {
 export interface EducationItem {
   id: string;
   institution: string;
+  institutionUrl?: string;
   degree: string;
   fieldOfStudy?: string;
   location?: string;
@@ -71,6 +72,7 @@ export interface EducationItem {
   thesisTitle?: string;
   advisor?: string;
   honors?: string[];
+  description?: string;
   visible: boolean;
 }
 

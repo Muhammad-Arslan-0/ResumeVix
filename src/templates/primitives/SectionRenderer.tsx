@@ -407,7 +407,24 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                       <div>
                         {eduSchoolFirst ? (
                           <>
-                            <span className="font-bold">{item.institution}</span>
+                            <span className="font-bold">
+                              {item.institutionUrl ? (
+                                <a
+                                  href={
+                                    /^https?:\/\//i.test(item.institutionUrl)
+                                      ? item.institutionUrl
+                                      : `https://${item.institutionUrl}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline"
+                                >
+                                  {item.institution}
+                                </a>
+                              ) : (
+                                item.institution
+                              )}
+                            </span>
                             <span className="italic">
                               , {item.degree}
                               {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ''}
@@ -419,7 +436,25 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                               {item.degree}
                               {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ''}
                             </span>
-                            <span className="italic">, {item.institution}</span>
+                            <span className="italic">
+                              ,{' '}
+                              {item.institutionUrl ? (
+                                <a
+                                  href={
+                                    /^https?:\/\//i.test(item.institutionUrl)
+                                      ? item.institutionUrl
+                                      : `https://${item.institutionUrl}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline"
+                                >
+                                  {item.institution}
+                                </a>
+                              ) : (
+                                item.institution
+                              )}
+                            </span>
                           </>
                         )}
                       </div>
@@ -430,6 +465,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                         <p className="text-[0.9em] italic mt-0.5">
                           Thesis: {item.thesisTitle}
                           {item.advisor ? ` (Advisor: ${item.advisor})` : ''}
+                        </p>
+                      )}
+                      {item.description && (
+                        <p className="text-[0.9em] text-[var(--rv-muted)] mt-0.5 whitespace-pre-line">
+                          {item.description}
                         </p>
                       )}
                     </div>
@@ -461,6 +501,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                     {item.honors && item.honors.length > 0 && (
                       <p className="text-[0.88em] text-[var(--rv-muted)] mt-0.5">
                         Honors: {item.honors.join(' • ')}
+                      </p>
+                    )}
+                    {item.description && (
+                      <p className="text-[0.9em] text-[var(--rv-muted)] mt-0.5 whitespace-pre-line">
+                        {item.description}
                       </p>
                     )}
                   </article>
