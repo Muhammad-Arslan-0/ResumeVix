@@ -114,20 +114,34 @@ export async function extractTextFromPdf(file: File): Promise<ExtractedPdfConten
     }
 
     const lines: string[] = [];
-    let currentLine: string[] = [];
+    let currentLine = '';
     let lastY: number | null = null;
+    let lastEndX: number | null = null;
 
     for (const item of content.items) {
       if (!('str' in item) || !item.str) continue;
+      const x = Array.isArray(item.transform) ? item.transform[4] : null;
       const y = Array.isArray(item.transform) ? item.transform[5] : null;
+      const itemWidth = 'width' in item && typeof item.width === 'number' ? item.width : 0;
+
       if (lastY !== null && y !== null && Math.abs(y - lastY) > 4) {
-        if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
-        currentLine = [];
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        currentLine = item.str;
+        lastEndX = x !== null ? x + itemWidth : null;
+      } else {
+        if (currentLine) {
+          const gap = x !== null && lastEndX !== null ? x - lastEndX : 0;
+          currentLine += gap > 18 ? `\t${item.str}` : ` ${item.str}`;
+        } else {
+          currentLine = item.str;
+        }
+        if (x !== null) {
+          lastEndX = x + itemWidth;
+        }
       }
-      currentLine.push(item.str);
       if (y !== null) lastY = y;
     }
-    if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
+    if (currentLine.trim()) lines.push(currentLine.trim());
     pages.push(lines.filter(Boolean).join('\n'));
   }
 
@@ -197,14 +211,15 @@ export function parseResumeTextHeuristic(
   let currentSection = 'header';
 
   for (const line of lines) {
-    const matched = SECTION_HEADER_PATTERNS.find((p) => p.regex.test(line));
+    const cleanLine = line.replace(/\t+/g, ' ').trim();
+    const matched = SECTION_HEADER_PATTERNS.find((p) => p.regex.test(cleanLine));
     if (matched) {
       currentSection = matched.key;
       if (!buckets[currentSection]) buckets[currentSection] = [];
       continue;
     }
     if (!buckets[currentSection]) buckets[currentSection] = [];
-    buckets[currentSection].push(line);
+    buckets[currentSection].push(currentSection === 'skills' ? line : cleanLine);
   }
 
   const headerLines = buckets.header || [];
@@ -328,22 +343,123 @@ export function parseResumeTextHeuristic(
     });
   }
 
-  // Parse Skills
-  const skills: ResumeData['skills'] =
-    skillLines.length > 0
-      ? [
-          {
-            id: uid('skill', 0),
-            category: 'Skills',
-            items: skillLines
-              .join(', ')
-              .split(/[,•|]+/)
-              .map((s) => s.trim())
-              .filter(Boolean),
+  // Parse Skills (supports multi-column tab grids, "Category: items", and stacked category/items)
+  const splitSkillTokens = (raw: string): string[] => {
+    const tokens: string[] = [];
+    let buf = '';
+    let depth = 0;
+    for (const ch of raw) {
+      if (ch === '(') depth++;
+      else if (ch === ')' && depth > 0) depth--;
+      if ((ch === ',' || ch === '•' || ch === '|') && depth === 0) {
+        if (buf.trim()) tokens.push(buf.trim());
+        buf = '';
+      } else {
+        buf += ch;
+      }
+    }
+    if (buf.trim()) tokens.push(buf.trim());
+    return tokens;
+  };
+
+  const skills: ResumeData['skills'] = [];
+  if (skillLines.length > 0) {
+    const hasTabs = skillLines.some((l) => l.includes('\t'));
+
+    if (hasTabs) {
+      let activeRowGroups: Array<{ category: string; rawItems: string }> = [];
+      for (const line of skillLines) {
+        const cells = line
+          .split('\t')
+          .map((c) => c.trim())
+          .filter(Boolean);
+        if (cells.length === 0) continue;
+
+        const looksLikeHeaderRow =
+          cells.length >= 2 &&
+          cells.every((c) => !c.includes(',') && c.length <= 36);
+
+        if (looksLikeHeaderRow) {
+          for (const g of activeRowGroups) {
+            skills.push({
+              id: uid('skill', skills.length),
+              category: g.category,
+              items: splitSkillTokens(g.rawItems),
+              visible: true,
+            });
+          }
+          activeRowGroups = cells.map((c) => ({ category: c, rawItems: '' }));
+        } else if (activeRowGroups.length > 0) {
+          if (cells.length === 1 && activeRowGroups[activeRowGroups.length - 1].rawItems.trim().endsWith(',')) {
+            const last = activeRowGroups[activeRowGroups.length - 1];
+            last.rawItems = `${last.rawItems} ${cells[0]}`.trim();
+          } else {
+            cells.forEach((cell, idx) => {
+              const target = activeRowGroups[idx] || activeRowGroups[activeRowGroups.length - 1];
+              target.rawItems = target.rawItems ? `${target.rawItems}, ${cell}` : cell;
+            });
+          }
+        }
+      }
+      for (const g of activeRowGroups) {
+        skills.push({
+          id: uid('skill', skills.length),
+          category: g.category,
+          items: splitSkillTokens(g.rawItems),
+          visible: true,
+        });
+      }
+    } else if (skillLines.some((l) => /^[^:]{2,40}:\s*.+/.test(l))) {
+      for (const line of skillLines) {
+        const match = line.match(/^([^:]{2,40}):\s*(.+)$/);
+        if (match) {
+          skills.push({
+            id: uid('skill', skills.length),
+            category: match[1].trim(),
+            items: splitSkillTokens(match[2]),
             visible: true,
-          },
-        ]
-      : [];
+          });
+        } else if (skills.length > 0) {
+          skills[skills.length - 1].items.push(...splitSkillTokens(line));
+        }
+      }
+    } else {
+      // Check stacked Category -> comma-separated items pattern
+      let idx = 0;
+      const stackedGroups: ResumeData['skills'] = [];
+      while (idx < skillLines.length) {
+        const line = skillLines[idx];
+        const next = skillLines[idx + 1];
+        if (!line.includes(',') && line.length <= 40 && next && next.includes(',')) {
+          let rawItems = next;
+          idx += 2;
+          while (idx < skillLines.length && rawItems.trim().endsWith(',')) {
+            rawItems = `${rawItems} ${skillLines[idx]}`;
+            idx++;
+          }
+          stackedGroups.push({
+            id: uid('skill', stackedGroups.length),
+            category: line,
+            items: splitSkillTokens(rawItems),
+            visible: true,
+          });
+        } else {
+          idx++;
+        }
+      }
+
+      if (stackedGroups.length > 0) {
+        skills.push(...stackedGroups);
+      } else {
+        skills.push({
+          id: uid('skill', 0),
+          category: 'Skills',
+          items: splitSkillTokens(skillLines.join(', ')),
+          visible: true,
+        });
+      }
+    }
+  }
 
   // Parse multiple Projects (split on `* ProjectName` or `• ProjectName`)
   const projects: ResumeData['projects'] = [];

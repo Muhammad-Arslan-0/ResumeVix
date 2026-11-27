@@ -66,4 +66,37 @@ Urdu — Native/Bilingual`;
       level: 'Professional Proficiency',
     });
   });
+
+  it('parses multi-column tab-separated skill grids into separate categories', () => {
+    const textWithGridSkills = `Muhammad Arslan
+Flutter Developer
+SKILLS
+UI Designing\tAPI Integration\tState Management
+Material, Cupertino\tRestful, Socket IO, (Http, Dio)\tBloc, Provider, Riverpod, Getx
+Local Database\tResponsiveness\tFirebase
+Hive, Sqflite\tScreenUtills, MediaQuery, Sizer\tAuthentication, Storage, Databases,
+Push Notifications
+AI Integration\tPayment\tOthers
+OpenAI, Gemini, Claude AI\tStripe, Paystack, RevenueCat\tKotlin, JavaScript, NodeJS, GitHub,
+Trello`;
+
+    const parsed = parseResumeTextHeuristic(textWithGridSkills);
+    expect(parsed.skills).toHaveLength(9);
+    expect(parsed.skills[0]).toMatchObject({
+      category: 'UI Designing',
+      items: ['Material', 'Cupertino'],
+    });
+    expect(parsed.skills[1]).toMatchObject({
+      category: 'API Integration',
+      items: ['Restful', 'Socket IO', '(Http, Dio)'],
+    });
+    expect(parsed.skills[5]).toMatchObject({
+      category: 'Firebase',
+      items: ['Authentication', 'Storage', 'Databases', 'Push Notifications'],
+    });
+    expect(parsed.skills[8]).toMatchObject({
+      category: 'Others',
+      items: ['Kotlin', 'JavaScript', 'NodeJS', 'GitHub', 'Trello'],
+    });
+  });
 });
