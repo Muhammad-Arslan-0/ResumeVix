@@ -269,7 +269,7 @@ export const PreviewCanvas: React.FC = () => {
       </div>
 
       {/* Print-Only Natural Flow (exact vector PDF pagination with @page rules) */}
-      <div className="hidden print:block">
+      <div data-rv-pdf-source="true" className="hidden print:block">
         <UnifiedTemplateRenderer data={deferredResume} config={deferredTemplate} />
       </div>
     </div>

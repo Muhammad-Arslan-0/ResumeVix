@@ -1,66 +1,121 @@
-import { jsPDF } from 'jspdf';
-import { toPng } from 'html-to-image';
 import { PageSize } from '@/types';
 
 /**
- * Generates and directly downloads a multi-page PDF file from the rendered
- * `[data-rv-pdf-page="true"]` paper sheets without opening the browser print dialog.
+ * Generates and directly downloads a true vector, selectable-text PDF via
+ * headless Chromium (/api/export/pdf) without opening the browser print dialog.
  */
 export async function downloadResumePdf(
   pageSize: PageSize,
-  documentTitle: string
+  documentTitle: string,
+  margins?: { xMm?: number; yMm?: number }
 ): Promise<void> {
   const safeBase = (documentTitle.trim() || 'ResumeVix_CV')
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
     .replace(/\s+/g, '_');
 
-  const pageNodes = Array.from(
-    document.querySelectorAll<HTMLElement>('[data-rv-pdf-page="true"]')
-  );
-
-  if (pageNodes.length === 0) {
-    throw new Error('Resume preview pages are not ready yet.');
+  const sourceEl = document.querySelector<HTMLElement>('[data-rv-pdf-source="true"]');
+  if (!sourceEl) {
+    throw new Error('Resume preview is not ready yet.');
   }
 
   if (document.fonts?.ready) {
     await document.fonts.ready;
   }
 
-  const format = pageSize === 'A4' ? 'a4' : 'letter';
-  const pageWidthMm = pageSize === 'A4' ? 210 : 215.9;
-  const pageHeightMm = pageSize === 'A4' ? 297 : 279.4;
+  const marginX = margins?.xMm ?? 14;
+  const marginY = margins?.yMm ?? 14;
+  const pageSizeCss = pageSize === 'A4' ? 'A4 portrait' : 'letter portrait';
 
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format,
-    compress: true,
-  });
-
-  for (let i = 0; i < pageNodes.length; i++) {
-    const node = pageNodes[i];
-    const width = node.offsetWidth;
-    const height = node.offsetHeight;
-
-    const dataUrl = await toPng(node, {
-      width,
-      height,
-      pixelRatio: 2.5,
-      backgroundColor: '#ffffff',
-      style: {
-        boxShadow: 'none',
-        borderRadius: '0',
-      },
-    });
-
-    if (i > 0) {
-      pdf.addPage(format, 'portrait');
+  // Collect stylesheets (with absolute URLs) and inline styles from the current document
+  const headAssets: string[] = [];
+  const headNodes = Array.from(
+    document.head.querySelectorAll('link[rel="stylesheet"], style')
+  );
+  for (const node of headNodes) {
+    if (node.tagName === 'LINK') {
+      const link = node as HTMLLinkElement;
+      if (link.href) {
+        headAssets.push(`<link rel="stylesheet" href="${link.href}" />`);
+      }
+    } else if (node.tagName === 'STYLE') {
+      headAssets.push(`<style>${node.textContent || ''}</style>`);
     }
-
-    pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidthMm, pageHeightMm, undefined, 'FAST');
   }
 
-  pdf.save(`${safeBase}.pdf`);
+  const pdfRules = `
+    <style>
+      @page {
+        size: ${pageSizeCss};
+        margin: ${marginY}mm ${marginX}mm;
+      }
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        height: auto !important;
+        overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .rv-pdf-root .resume-page {
+        width: 100% !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+      .rv-section-heading {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .rv-entry {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      li, p {
+        orphans: 2;
+        widows: 2;
+      }
+    </style>
+  `;
+
+  const fullHtml = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <base href="${window.location.origin}/" />
+    ${headAssets.join('\n')}
+    ${pdfRules}
+  </head>
+  <body class="rv-pdf-root bg-white">
+    ${sourceEl.innerHTML}
+  </body>
+</html>`;
+
+  const res = await fetch('/api/export/pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      html: fullHtml,
+      pageSize,
+      title: safeBase,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `PDF export failed (${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeBase}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function triggerPrintPdf(pageSize: PageSize, documentTitle: string): void {

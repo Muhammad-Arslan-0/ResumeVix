@@ -444,7 +444,11 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                   try {
                     await downloadResumePdf(
                       template.pageSize,
-                      `${resume.profile.fullName || 'ResumeVix'}_CV`
+                      `${resume.profile.fullName || 'ResumeVix'}_CV`,
+                      {
+                        xMm: template.style.marginXMm ?? template.style.marginMm,
+                        yMm: template.style.marginYMm ?? template.style.marginMm,
+                      }
                     );
                   } catch (err) {
                     setImportError(
