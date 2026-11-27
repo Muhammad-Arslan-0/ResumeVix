@@ -20,10 +20,12 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Link2,
   Loader2,
   Plus,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { DragHandle, SortableWrapper } from './SortableWrapper';
@@ -86,6 +88,9 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   const addCustomEntry = useResumeStore((s) => s.addCustomEntry);
   const updateCustomEntry = useResumeStore((s) => s.updateCustomEntry);
   const removeCustomEntry = useResumeStore((s) => s.removeCustomEntry);
+  const [openLinkField, setOpenLinkField] = useState<
+    'linkedin' | 'website' | 'github' | 'orcid' | null
+  >(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     profile: true,
@@ -907,69 +912,158 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
           )}
         </button>
         {expanded.profile && (
-          <div className="p-3 space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                value={resume.profile.fullName}
-                onChange={(e) => updateProfile({ fullName: e.target.value })}
-                placeholder="Full Name"
-                className={`${inputClass} font-medium`}
-              />
-              <input
-                value={resume.profile.headline}
-                onChange={(e) => updateProfile({ headline: e.target.value })}
-                placeholder="Headline / Target Role"
-                className={inputClass}
-              />
+          <div className="p-3.5 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Full name
+                </label>
+                <input
+                  value={resume.profile.fullName}
+                  onChange={(e) => updateProfile({ fullName: e.target.value })}
+                  placeholder="Full Name"
+                  className={`${inputClass} font-medium`}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Professional title
+                </label>
+                <input
+                  value={resume.profile.headline}
+                  onChange={(e) => updateProfile({ headline: e.target.value })}
+                  placeholder="Headline / Target Role"
+                  className={inputClass}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Email
+              </label>
               <input
                 value={resume.profile.email}
                 onChange={(e) => updateProfile({ email: e.target.value })}
-                placeholder="Email"
-                className={inputClass}
-              />
-              <input
-                value={resume.profile.phone}
-                onChange={(e) => updateProfile({ phone: e.target.value })}
-                placeholder="Phone"
+                placeholder="you@example.com"
                 className={inputClass}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                value={resume.profile.location}
-                onChange={(e) => updateProfile({ location: e.target.value })}
-                placeholder="Location"
-                className={inputClass}
-              />
-              <input
-                value={resume.profile.website || ''}
-                onChange={(e) => updateProfile({ website: e.target.value })}
-                placeholder="Website / Portfolio"
-                className={inputClass}
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Phone
+                </label>
+                <input
+                  value={resume.profile.phone}
+                  onChange={(e) => updateProfile({ phone: e.target.value })}
+                  placeholder="+1 (555) 123-4567"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Location
+                </label>
+                <input
+                  value={resume.profile.location}
+                  onChange={(e) => updateProfile({ location: e.target.value })}
+                  placeholder="City, Country"
+                  className={inputClass}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <input
-                value={resume.profile.linkedin || ''}
-                onChange={(e) => updateProfile({ linkedin: e.target.value })}
-                placeholder="LinkedIn"
-                className={inputClass}
-              />
-              <input
-                value={resume.profile.github || ''}
-                onChange={(e) => updateProfile({ github: e.target.value })}
-                placeholder="GitHub"
-                className={inputClass}
-              />
-              <input
-                value={resume.profile.orcid || ''}
-                onChange={(e) => updateProfile({ orcid: e.target.value })}
-                placeholder="ORCID (Academic)"
-                className={inputClass}
-              />
-            </div>
+
+            {(
+              [
+                {
+                  key: 'linkedin',
+                  urlKey: 'linkedinUrl',
+                  label: 'LinkedIn',
+                  placeholder: 'e.g. muhammad-arslan-758490248',
+                  urlPlaceholder: 'https://linkedin.com/in/...',
+                },
+                {
+                  key: 'website',
+                  urlKey: 'websiteUrl',
+                  label: 'Website',
+                  placeholder: 'e.g. portfolio-89dbb.web.app',
+                  urlPlaceholder: 'https://your-portfolio.com',
+                },
+                {
+                  key: 'github',
+                  urlKey: 'githubUrl',
+                  label: 'GitHub',
+                  placeholder: 'e.g. Muhammad-Arslan-0',
+                  urlPlaceholder: 'https://github.com/...',
+                },
+                {
+                  key: 'orcid',
+                  urlKey: 'orcidUrl',
+                  label: 'ORCID',
+                  placeholder: 'e.g. 0000-0002-1825-0097',
+                  urlPlaceholder: 'https://orcid.org/...',
+                },
+              ] as const
+            ).map((field) => {
+              const displayValue = resume.profile[field.key] || '';
+              const urlValue = resume.profile[field.urlKey] || '';
+              const isOpen = openLinkField === field.key;
+              const hasExplicitUrl = Boolean(urlValue.trim());
+
+              return (
+                <div key={field.key} className="space-y-1.5">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    {field.label}
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      value={displayValue}
+                      onChange={(e) => updateProfile({ [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className={`${inputClass} pr-16`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setOpenLinkField(isOpen ? null : field.key)}
+                      title={hasExplicitUrl ? `Linked: ${urlValue}` : `Add ${field.label} URL`}
+                      className={`absolute right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${
+                        isOpen || hasExplicitUrl
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600'
+                      }`}
+                    >
+                      <Link2 className="w-3 h-3" />
+                      <span>Link</span>
+                    </button>
+                  </div>
+
+                  {isOpen && (
+                    <div className="flex items-center gap-1.5 pl-2 border-l-2 border-teal-500/60">
+                      <input
+                        type="url"
+                        value={urlValue}
+                        onChange={(e) => updateProfile({ [field.urlKey]: e.target.value })}
+                        placeholder={field.urlPlaceholder}
+                        aria-label={`${field.label} URL`}
+                        className={inputClass}
+                      />
+                      {hasExplicitUrl && (
+                        <button
+                          type="button"
+                          onClick={() => updateProfile({ [field.urlKey]: '' })}
+                          title="Clear link URL"
+                          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

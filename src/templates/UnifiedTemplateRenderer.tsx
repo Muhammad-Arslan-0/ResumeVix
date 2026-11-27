@@ -12,17 +12,57 @@ interface TemplateProps {
 
 const SIDEBAR_SECTION_TYPES = new Set(['skills', 'education', 'publications']);
 
+function resolveProfileHref(
+  kind: 'email' | 'linkedin' | 'website' | 'github' | 'orcid' | 'text',
+  display?: string,
+  explicitUrl?: string
+): string | undefined {
+  const rawUrl = explicitUrl?.trim();
+  if (rawUrl) {
+    if (/^(https?:\/\/|mailto:|tel:)/i.test(rawUrl)) return rawUrl;
+    return `https://${rawUrl}`;
+  }
+  const val = display?.trim();
+  if (!val) return undefined;
+  if (kind === 'email') return `mailto:${val}`;
+  if (/^https?:\/\//i.test(val)) return val;
+  if (kind === 'linkedin') {
+    if (val.includes('linkedin.com')) return `https://${val.replace(/^https?:\/\//i, '')}`;
+    return `https://www.linkedin.com/in/${val.replace(/^@/, '')}`;
+  }
+  if (kind === 'github') {
+    if (val.includes('github.com')) return `https://${val.replace(/^https?:\/\//i, '')}`;
+    return `https://github.com/${val.replace(/^@/, '')}`;
+  }
+  if (kind === 'orcid') {
+    const clean = val.replace(/^orcid:\s*/i, '');
+    return clean.includes('orcid.org') ? `https://${clean.replace(/^https?:\/\//i, '')}` : `https://orcid.org/${clean}`;
+  }
+  if (kind === 'website' && val.includes('.')) {
+    return `https://${val}`;
+  }
+  return undefined;
+}
+
 function ContactLine({ data, centered = false }: { data: ResumeData; centered?: boolean }) {
   const { profile } = data;
   const items = [
-    profile.email,
-    profile.phone,
-    profile.location,
-    profile.website,
-    profile.linkedin,
-    profile.github,
-    profile.orcid ? `ORCID: ${profile.orcid}` : undefined,
-  ].filter(Boolean) as string[];
+    profile.email ? { text: profile.email, href: resolveProfileHref('email', profile.email) } : null,
+    profile.phone ? { text: profile.phone } : null,
+    profile.location ? { text: profile.location } : null,
+    profile.website
+      ? { text: profile.website, href: resolveProfileHref('website', profile.website, profile.websiteUrl) }
+      : null,
+    profile.linkedin
+      ? { text: profile.linkedin, href: resolveProfileHref('linkedin', profile.linkedin, profile.linkedinUrl) }
+      : null,
+    profile.github
+      ? { text: profile.github, href: resolveProfileHref('github', profile.github, profile.githubUrl) }
+      : null,
+    profile.orcid
+      ? { text: `ORCID: ${profile.orcid}`, href: resolveProfileHref('orcid', profile.orcid, profile.orcidUrl) }
+      : null,
+  ].filter(Boolean) as Array<{ text: string; href?: string }>;
 
   return (
     <div
@@ -33,7 +73,18 @@ function ContactLine({ data, centered = false }: { data: ResumeData; centered?: 
       {items.map((item, idx) => (
         <span key={idx}>
           {idx > 0 && <span className="mr-2.5 opacity-50">•</span>}
-          {item}
+          {item.href ? (
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              {item.text}
+            </a>
+          ) : (
+            item.text
+          )}
         </span>
       ))}
     </div>
@@ -86,14 +137,44 @@ function TemplateHeader({
 
   if (headerStyle === 'icon-centered' || hc.textAlign || hc.detailsSeparator || hc.iconStyle) {
     const contactChips = [
-      profile.email ? { icon: Mail, text: profile.email } : null,
+      profile.email
+        ? { icon: Mail, text: profile.email, href: resolveProfileHref('email', profile.email) }
+        : null,
       profile.phone ? { icon: Phone, text: profile.phone } : null,
       profile.location ? { icon: MapPin, text: profile.location } : null,
-      profile.linkedin ? { icon: Linkedin, text: profile.linkedin } : null,
-      profile.website ? { icon: Globe, text: profile.website } : null,
-      profile.github ? { icon: Github, text: profile.github } : null,
-      profile.orcid ? { icon: Globe, text: `ORCID: ${profile.orcid}` } : null,
-    ].filter(Boolean) as Array<{ icon: React.ComponentType<{ className?: string }>; text: string }>;
+      profile.linkedin
+        ? {
+            icon: Linkedin,
+            text: profile.linkedin,
+            href: resolveProfileHref('linkedin', profile.linkedin, profile.linkedinUrl),
+          }
+        : null,
+      profile.website
+        ? {
+            icon: Globe,
+            text: profile.website,
+            href: resolveProfileHref('website', profile.website, profile.websiteUrl),
+          }
+        : null,
+      profile.github
+        ? {
+            icon: Github,
+            text: profile.github,
+            href: resolveProfileHref('github', profile.github, profile.githubUrl),
+          }
+        : null,
+      profile.orcid
+        ? {
+            icon: Globe,
+            text: `ORCID: ${profile.orcid}`,
+            href: resolveProfileHref('orcid', profile.orcid, profile.orcidUrl),
+          }
+        : null,
+    ].filter(Boolean) as Array<{
+      icon: React.ComponentType<{ className?: string }>;
+      text: string;
+      href?: string;
+    }>;
 
     const renderIconBadge = (Icon: React.ComponentType<{ className?: string }>) => {
       if (iconStyle === 'plain') {
@@ -174,7 +255,18 @@ function TemplateHeader({
               {separator === 'bar' && idx > 0 && !detailsGrid && (
                 <span className="opacity-40 mr-1">|</span>
               )}
-              <span>{chip.text}</span>
+              {chip.href ? (
+                <a
+                  href={chip.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {chip.text}
+                </a>
+              ) : (
+                <span>{chip.text}</span>
+              )}
             </span>
           ))}
         </div>

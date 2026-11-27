@@ -28,9 +28,13 @@ export interface ProfileData {
   phone: string;
   location: string;
   website?: string;
+  websiteUrl?: string;
   linkedin?: string;
+  linkedinUrl?: string;
   github?: string;
+  githubUrl?: string;
   orcid?: string;
+  orcidUrl?: string;
 }
 
 export interface ExperienceItem {
