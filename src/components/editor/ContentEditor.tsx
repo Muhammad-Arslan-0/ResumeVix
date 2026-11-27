@@ -164,6 +164,8 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [editingEduId, setEditingEduId] = useState<string | null>(null);
   const [openEduLinkId, setOpenEduLinkId] = useState<string | null>(null);
+  const [editingCustomId, setEditingCustomId] = useState<string | null>(null);
+  const [openCustomLinkId, setOpenCustomLinkId] = useState<string | null>(null);
   const [addSectionOpen, setAddSectionOpen] = useState(false);
   const [aiBusyId, setAiBusyId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -1183,61 +1185,212 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
       case 'custom': {
         const customSec = resume.customSections[sec.id];
         if (!customSec) return null;
+        const isCertificate = /certific/i.test(sec.title);
         return (
           <div className="space-y-2.5">
-            {customSec.entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-2"
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleItemDragEnd(sec.id)}
+            >
+              <SortableContext
+                items={customSec.entries.map((e) => e.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <div className="flex items-center gap-1.5">
-                  <input
-                    value={entry.title}
-                    onChange={(e) =>
-                      updateCustomEntry(sec.id, entry.id, { title: e.target.value })
-                    }
-                    placeholder="Entry Title"
-                    className={`${inputClass} font-medium`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeCustomEntry(sec.id, entry.id)}
-                    aria-label="Remove entry"
-                    className="p-1 text-slate-400 hover:text-red-500"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    value={entry.subtitle || ''}
-                    onChange={(e) =>
-                      updateCustomEntry(sec.id, entry.id, { subtitle: e.target.value })
-                    }
-                    placeholder="Subtitle / Organization"
-                    className={inputClass}
-                  />
-                  <input
-                    value={entry.dateRange || ''}
-                    onChange={(e) =>
-                      updateCustomEntry(sec.id, entry.id, { dateRange: e.target.value })
-                    }
-                    placeholder="Date Range"
-                    className={inputClass}
-                  />
-                </div>
-                <textarea
-                  rows={2}
-                  value={entry.bullets.join('\n')}
-                  onChange={(e) =>
-                    updateCustomEntry(sec.id, entry.id, {
-                      bullets: e.target.value.split('\n'),
-                    })
-                  }
-                  className={inputClass}
-                />
-              </div>
-            ))}
+                {customSec.entries.map((entry) => {
+                  const isEditing = editingCustomId === entry.id;
+                  const isLinkOpen = openCustomLinkId === entry.id;
+                  const hasUrl = Boolean(entry.url?.trim());
+                  return (
+                    <SortableWrapper key={entry.id} id={entry.id}>
+                      {(handleProps) => (
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 overflow-hidden">
+                          <div className="px-2 py-2 flex items-center gap-1.5">
+                            <DragHandle {...handleProps} />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditingCustomId(isEditing ? null : entry.id)
+                              }
+                              className={`flex-1 text-left text-xs font-medium truncate ${
+                                !entry.visible ? 'opacity-45 text-slate-400' : ''
+                              }`}
+                            >
+                              {entry.title || (isCertificate ? 'Certificate' : 'Entry Title')}
+                              {entry.subtitle && (
+                                <span className="font-normal text-slate-500 ml-1.5">
+                                  — {entry.subtitle}
+                                </span>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateCustomEntry(sec.id, entry.id, {
+                                  visible: !entry.visible,
+                                })
+                              }
+                              aria-label={entry.visible ? 'Hide entry' : 'Show entry'}
+                              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                            >
+                              {entry.visible ? (
+                                <Eye className="w-3.5 h-3.5 text-teal-600" />
+                              ) : (
+                                <EyeOff className="w-3.5 h-3.5 opacity-45" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeCustomEntry(sec.id, entry.id)}
+                              aria-label="Remove entry"
+                              className="p-1 text-slate-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {isEditing && (
+                            <div className="p-3 pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5 bg-white dark:bg-slate-950/60">
+                              <div className="space-y-1.5">
+                                <label className="block text-[11px] font-medium">
+                                  {isCertificate ? 'Certificate' : 'Title'}
+                                </label>
+                                <div className="relative flex items-center">
+                                  <input
+                                    value={entry.title}
+                                    onChange={(e) =>
+                                      updateCustomEntry(sec.id, entry.id, {
+                                        title: e.target.value,
+                                      })
+                                    }
+                                    placeholder={
+                                      isCertificate ? 'Enter certificate' : 'Entry Title'
+                                    }
+                                    className={`${inputClass} font-medium pr-16`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOpenCustomLinkId(isLinkOpen ? null : entry.id)
+                                    }
+                                    title={
+                                      hasUrl
+                                        ? `Linked: ${entry.url}`
+                                        : 'Add credential / reference URL'
+                                    }
+                                    className={`absolute right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${
+                                      isLinkOpen || hasUrl
+                                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'
+                                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600'
+                                    }`}
+                                  >
+                                    <Link2 className="w-3 h-3" />
+                                    <span>Link</span>
+                                  </button>
+                                </div>
+                                {isLinkOpen && (
+                                  <div className="flex items-center gap-1.5 pl-2 border-l-2 border-teal-500/60">
+                                    <input
+                                      type="url"
+                                      value={entry.url || ''}
+                                      onChange={(e) =>
+                                        updateCustomEntry(sec.id, entry.id, {
+                                          url: e.target.value,
+                                        })
+                                      }
+                                      placeholder="https://..."
+                                      className={inputClass}
+                                    />
+                                    {hasUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          updateCustomEntry(sec.id, entry.id, { url: '' })
+                                        }
+                                        title="Clear URL"
+                                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {!isCertificate && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-[11px] font-medium mb-1">
+                                      Subtitle / Organization
+                                    </label>
+                                    <input
+                                      value={entry.subtitle || ''}
+                                      onChange={(e) =>
+                                        updateCustomEntry(sec.id, entry.id, {
+                                          subtitle: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Organization"
+                                      className={inputClass}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-medium mb-1">
+                                      Date Range
+                                    </label>
+                                    <input
+                                      value={entry.dateRange || ''}
+                                      onChange={(e) =>
+                                        updateCustomEntry(sec.id, entry.id, {
+                                          dateRange: e.target.value,
+                                        })
+                                      }
+                                      placeholder="e.g. 2024"
+                                      className={inputClass}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              <div>
+                                <label className="block text-[11px] font-medium mb-1">
+                                  Additional information
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={entry.bullets.join('\n')}
+                                  onChange={(e) =>
+                                    updateCustomEntry(sec.id, entry.id, {
+                                      bullets: e.target.value.split('\n'),
+                                    })
+                                  }
+                                  placeholder={
+                                    isCertificate
+                                      ? 'eg. Level 1 and 2'
+                                      : 'Details or bullet points (one per line)'
+                                  }
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCustomId(null)}
+                                  className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium transition"
+                                >
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </SortableWrapper>
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
             <div className="flex gap-2">
               <button
                 type="button"

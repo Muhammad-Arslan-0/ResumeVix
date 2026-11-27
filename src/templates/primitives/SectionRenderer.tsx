@@ -776,7 +776,24 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                 <article key={entry.id} className="rv-entry break-inside-avoid">
                   <div className="flex justify-between items-baseline gap-2">
                     <div>
-                      <span className="font-semibold">{entry.title}</span>
+                      <span className="font-semibold">
+                        {entry.url ? (
+                          <a
+                            href={
+                              /^https?:\/\//i.test(entry.url)
+                                ? entry.url
+                                : `https://${entry.url}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {entry.title}
+                          </a>
+                        ) : (
+                          entry.title
+                        )}
+                      </span>
                       {entry.subtitle && (
                         <span className="text-[var(--rv-muted)]"> — {entry.subtitle}</span>
                       )}

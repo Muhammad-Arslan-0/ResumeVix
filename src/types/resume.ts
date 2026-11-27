@@ -111,6 +111,7 @@ export interface SkillGroup {
 export interface CustomEntry {
   id: string;
   title: string;
+  url?: string;
   subtitle?: string;
   dateRange?: string;
   location?: string;
