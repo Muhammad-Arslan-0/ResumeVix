@@ -38,22 +38,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
-  const refreshCloud = async () => {
+  const refreshCloud = async (silent = false) => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase || !authUser) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const list = await listCloudResumes(supabase, authUser.id);
       setCloudResumes(list);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshCloud();
+    if (!authUser?.id) return;
+    refreshCloud(cloudResumes.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser]);
+  }, [authUser?.id]);
 
   const handleDuplicate = async (item: CloudResumeRecord) => {
     const supabase = getSupabaseBrowserClient();

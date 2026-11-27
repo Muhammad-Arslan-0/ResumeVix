@@ -38,11 +38,14 @@ export function useCloudAutoSave() {
         return;
       }
 
-      setAuthUser({
-        id: user.id,
-        email: user.email || '',
-        fullName: user.user_metadata?.full_name,
-      });
+      const prevUser = useResumeStore.getState().authUser;
+      if (!prevUser || prevUser.id !== user.id || prevUser.email !== (user.email || '')) {
+        setAuthUser({
+          id: user.id,
+          email: user.email || '',
+          fullName: user.user_metadata?.full_name,
+        });
+      }
 
       const state = useResumeStore.getState();
       if (!state.activeResumeId && state.hasLocalEdits) {
