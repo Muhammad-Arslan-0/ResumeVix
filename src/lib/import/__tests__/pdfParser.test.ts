@@ -60,6 +60,10 @@ Urdu — Native/Bilingual`;
       'Ermol Learner',
     ]);
     expect(parsed.skills[0].items).toContain('Flutter');
-    expect(parsed.customSections.custom_languages?.title).toBe('Languages');
+    expect(parsed.languages?.length).toBe(2);
+    expect(parsed.languages?.[0]).toMatchObject({
+      language: 'English',
+      level: 'Professional Proficiency',
+    });
   });
 });

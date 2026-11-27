@@ -71,6 +71,15 @@ export const ParsedResumeSchema = z.object({
       })
     )
     .default([]),
+  languages: z
+    .array(
+      z.object({
+        language: z.string().default(''),
+        level: z.string().default(''),
+        additionalInfo: z.string().optional(),
+      })
+    )
+    .default([]),
 });
 
 function uid(prefix: string, idx: number): string {
@@ -377,21 +386,15 @@ export function parseResumeTextHeuristic(
     flushProj();
   }
 
-  const customSections: ResumeData['customSections'] = {};
-  if (languageLines.length > 0) {
-    customSections.custom_languages = {
-      id: 'custom_languages',
-      title: 'Languages',
-      entries: [
-        {
-          id: uid('lang', 0),
-          title: languageLines.join(' • '),
-          bullets: [],
-          visible: true,
-        },
-      ],
+  const languages: NonNullable<ResumeData['languages']> = languageLines.map((line, idx) => {
+    const parts = line.split(/\s*[—–-]\s*/);
+    return {
+      id: uid('lang', idx),
+      language: parts[0]?.trim() || line,
+      level: parts.slice(1).join(' — ').trim() || 'Proficient',
+      visible: true,
     };
-  }
+  });
 
   return {
     id: `resume-${Date.now()}`,
@@ -413,7 +416,8 @@ export function parseResumeTextHeuristic(
     publications: [],
     projects,
     skills,
-    customSections,
+    languages,
+    customSections: {},
   };
 }
 
@@ -516,6 +520,13 @@ Preserve factual details accurately.`;
         id: uid('skill', i),
         category: s.category ?? 'Skills',
         items: s.items ?? [],
+        visible: true,
+      })),
+      languages: (parsed.languages ?? []).map((l, i) => ({
+        id: uid('lang', i),
+        language: l.language ?? '',
+        level: l.level ?? '',
+        additionalInfo: l.additionalInfo,
         visible: true,
       })),
       customSections: {},

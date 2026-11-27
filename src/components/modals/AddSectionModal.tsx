@@ -39,12 +39,17 @@ const SECTION_CATALOG = [
 
 export const AddSectionModal: React.FC<AddSectionModalProps> = ({ open, onClose }) => {
   const addCustomSection = useResumeStore((s) => s.addCustomSection);
+  const enableLanguagesSection = useResumeStore((s) => s.enableLanguagesSection);
   const [customTitle, setCustomTitle] = useState('');
 
   if (!open) return null;
 
   const handleSelect = (title: string) => {
-    addCustomSection(title);
+    if (title === 'Languages') {
+      enableLanguagesSection();
+    } else {
+      addCustomSection(title);
+    }
     onClose();
   };
 

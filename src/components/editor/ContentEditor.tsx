@@ -78,6 +78,10 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   const updateSkillGroup = useResumeStore((s) => s.updateSkillGroup);
   const removeSkillGroup = useResumeStore((s) => s.removeSkillGroup);
 
+  const addLanguage = useResumeStore((s) => s.addLanguage);
+  const updateLanguage = useResumeStore((s) => s.updateLanguage);
+  const removeLanguage = useResumeStore((s) => s.removeLanguage);
+
   const removeCustomSection = useResumeStore((s) => s.removeCustomSection);
   const addCustomEntry = useResumeStore((s) => s.addCustomEntry);
   const updateCustomEntry = useResumeStore((s) => s.updateCustomEntry);
@@ -88,6 +92,7 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
     summary: true,
     experience: true,
   });
+  const [editingLangId, setEditingLangId] = useState<string | null>(null);
   const [addSectionOpen, setAddSectionOpen] = useState(false);
   const [aiBusyId, setAiBusyId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -640,6 +645,158 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
             </button>
           </div>
         );
+
+      case 'languages': {
+        const langs = resume.languages || [];
+        const levelPresets = [
+          'Basic',
+          'Conversational',
+          'Proficient',
+          'Professional Proficiency',
+          'Native/Bilingual',
+        ];
+        return (
+          <div className="space-y-2.5">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleItemDragEnd('languages')}
+            >
+              <SortableContext
+                items={langs.map((l) => l.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {langs.map((lang) => {
+                  const isEditing = editingLangId === lang.id;
+                  return (
+                    <SortableWrapper key={lang.id} id={lang.id}>
+                      {(handleProps) => (
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 overflow-hidden">
+                          <div className="px-2 py-2 flex items-center gap-1.5">
+                            <DragHandle {...handleProps} />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditingLangId(isEditing ? null : lang.id)
+                              }
+                              className={`flex-1 text-left text-xs font-medium truncate ${
+                                !lang.visible ? 'opacity-45 line-through' : ''
+                              }`}
+                            >
+                              {lang.language || 'Language'}
+                              {lang.level && (
+                                <span className="font-normal text-slate-500 ml-1.5">
+                                  — {lang.level}
+                                </span>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateLanguage(lang.id, { visible: !lang.visible })
+                              }
+                              aria-label={lang.visible ? 'Hide language' : 'Show language'}
+                              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                            >
+                              {lang.visible ? (
+                                <Eye className="w-3.5 h-3.5 text-teal-600" />
+                              ) : (
+                                <EyeOff className="w-3.5 h-3.5 opacity-45" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeLanguage(lang.id)}
+                              aria-label="Remove language"
+                              className="p-1 text-slate-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {isEditing && (
+                            <div className="p-3 pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5 bg-white dark:bg-slate-950/60">
+                              <div>
+                                <label className="block text-[11px] font-medium mb-1">
+                                  Language
+                                </label>
+                                <input
+                                  value={lang.language}
+                                  onChange={(e) =>
+                                    updateLanguage(lang.id, { language: e.target.value })
+                                  }
+                                  placeholder="e.g. English"
+                                  className={inputClass}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-medium mb-1">
+                                  Additional information
+                                </label>
+                                <input
+                                  value={lang.additionalInfo || ''}
+                                  onChange={(e) =>
+                                    updateLanguage(lang.id, {
+                                      additionalInfo: e.target.value,
+                                    })
+                                  }
+                                  placeholder="e.g. C2, 4+, TOEFL, IELTS..."
+                                  className={inputClass}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-medium mb-1">
+                                  Language level
+                                </label>
+                                <select
+                                  value={
+                                    levelPresets.includes(lang.level)
+                                      ? lang.level
+                                      : '__custom__'
+                                  }
+                                  onChange={(e) => {
+                                    if (e.target.value !== '__custom__') {
+                                      updateLanguage(lang.id, { level: e.target.value });
+                                    }
+                                  }}
+                                  className={inputClass}
+                                >
+                                  {levelPresets.map((lv) => (
+                                    <option key={lv} value={lv}>
+                                      {lv}
+                                    </option>
+                                  ))}
+                                  <option value="__custom__">Custom level text...</option>
+                                </select>
+                                <input
+                                  value={lang.level}
+                                  onChange={(e) =>
+                                    updateLanguage(lang.id, { level: e.target.value })
+                                  }
+                                  placeholder="Custom level text"
+                                  className={`${inputClass} mt-1.5`}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </SortableWrapper>
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
+            <button
+              type="button"
+              onClick={addLanguage}
+              className="w-full py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Entry</span>
+            </button>
+          </div>
+        );
+      }
 
       case 'custom': {
         const customSec = resume.customSections[sec.id];

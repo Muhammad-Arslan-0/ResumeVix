@@ -628,6 +628,27 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         );
       }
 
+      case 'languages': {
+        const visibleItems = (data.languages || []).filter((l) => l.visible);
+        if (visibleItems.length === 0) return null;
+        return (
+          <section className="rv-section break-inside-avoid">
+            {renderHeading()}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[0.94em]">
+              {visibleItems.map((lang) => (
+                <div key={lang.id}>
+                  <span className="font-bold">{lang.language}</span>
+                  {lang.level && <span> — {lang.level}</span>}
+                  {lang.additionalInfo && (
+                    <span className="text-[var(--rv-muted)]"> ({lang.additionalInfo})</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      }
+
       case 'custom': {
         const customSec = data.customSections[section.id];
         if (!customSec) return null;

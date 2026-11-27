@@ -9,8 +9,17 @@ export type SectionType =
   | 'publications'
   | 'projects'
   | 'skills'
+  | 'languages'
   | 'custom'
   | 'page_break';
+
+export interface LanguageItem {
+  id: string;
+  language: string;
+  level: string;
+  additionalInfo?: string;
+  visible: boolean;
+}
 
 export interface ProfileData {
   fullName: string;
@@ -109,5 +118,6 @@ export interface ResumeData {
   publications: PublicationItem[];
   projects: ProjectItem[];
   skills: SkillGroup[];
+  languages?: LanguageItem[];
   customSections: Record<string, CustomSection>;
 }

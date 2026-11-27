@@ -5,6 +5,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import {
   AIConfig,
   CustomSection,
+  LanguageItem,
   ResumeData,
   SectionConfig,
   TemplateConfig,
@@ -87,6 +88,11 @@ interface ResumeStoreState {
   addSkillGroup: () => void;
   updateSkillGroup: (id: string, patch: Partial<ResumeData['skills'][number]>) => void;
   removeSkillGroup: (id: string) => void;
+
+  enableLanguagesSection: () => void;
+  addLanguage: () => void;
+  updateLanguage: (id: string, patch: Partial<LanguageItem>) => void;
+  removeLanguage: (id: string) => void;
 
   addCustomSection: (title: string) => void;
   removeCustomSection: (sectionId: string) => void;
@@ -403,6 +409,62 @@ export const useResumeStore = create<ResumeStoreState>()(
           state.resume.skills = state.resume.skills.filter((s) => s.id !== id);
         }),
 
+      enableLanguagesSection: () =>
+        set((state) => {
+          pushHistory(state);
+          const existing = state.template.sections.find((s) => s.id === 'languages');
+          if (existing) {
+            existing.visible = true;
+          } else {
+            const maxOrder = state.template.sections.reduce(
+              (max, s) => Math.max(max, s.order),
+              -1
+            );
+            state.template.sections.push({
+              id: 'languages',
+              type: 'languages',
+              title: 'Languages',
+              visible: true,
+              order: maxOrder + 1,
+            });
+          }
+          if (!state.resume.languages || state.resume.languages.length === 0) {
+            state.resume.languages = [
+              {
+                id: uid('lang'),
+                language: 'English',
+                level: 'Professional Proficiency',
+                visible: true,
+              },
+            ];
+          }
+        }),
+
+      addLanguage: () =>
+        set((state) => {
+          pushHistory(state);
+          if (!state.resume.languages) state.resume.languages = [];
+          state.resume.languages.push({
+            id: uid('lang'),
+            language: 'New Language',
+            level: 'Conversational',
+            visible: true,
+          });
+        }),
+
+      updateLanguage: (id, patch) =>
+        set((state) => {
+          const item = (state.resume.languages || []).find((l) => l.id === id);
+          if (item) Object.assign(item, patch);
+          state.resume.updatedAt = new Date().toISOString();
+        }),
+
+      removeLanguage: (id) =>
+        set((state) => {
+          pushHistory(state);
+          state.resume.languages = (state.resume.languages || []).filter((l) => l.id !== id);
+        }),
+
       addCustomSection: (title) =>
         set((state) => {
           pushHistory(state);
@@ -546,7 +608,9 @@ export const useResumeStore = create<ResumeStoreState>()(
                     ? state.resume.projects
                     : sectionKey === 'skills'
                       ? state.resume.skills
-                      : state.resume.customSections[sectionKey]?.entries;
+                      : sectionKey === 'languages'
+                        ? state.resume.languages
+                        : state.resume.customSections[sectionKey]?.entries;
 
           if (!list) return;
           const oldIndex = list.findIndex((i) => i.id === activeId);
@@ -559,6 +623,7 @@ export const useResumeStore = create<ResumeStoreState>()(
           else if (sectionKey === 'publications') state.resume.publications = reordered as typeof state.resume.publications;
           else if (sectionKey === 'projects') state.resume.projects = reordered as typeof state.resume.projects;
           else if (sectionKey === 'skills') state.resume.skills = reordered as typeof state.resume.skills;
+          else if (sectionKey === 'languages') state.resume.languages = reordered as LanguageItem[];
           else if (state.resume.customSections[sectionKey]) {
             state.resume.customSections[sectionKey].entries = reordered as CustomSection['entries'];
           }

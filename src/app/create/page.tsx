@@ -64,6 +64,10 @@ export default function CreateResumePage() {
       const pubSec = baseConfig.sections.find((s) => s.id === 'publications');
       if (pubSec) pubSec.visible = true;
     }
+    if (baseResume.languages && baseResume.languages.length > 0) {
+      const langSec = baseConfig.sections.find((s) => s.id === 'languages');
+      if (langSec) langSec.visible = true;
+    }
 
     const supabase = getSupabaseBrowserClient();
     if (supabase && authUser) {

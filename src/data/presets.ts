@@ -92,6 +92,14 @@ export const TECH_RESUME_PRESET: ResumeData = {
       visible: true,
     },
   ],
+  languages: [
+    {
+      id: 'lang-1',
+      language: 'English',
+      level: 'Native/Bilingual',
+      visible: true,
+    },
+  ],
   customSections: {},
 };
 
@@ -222,5 +230,6 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
     { id: 'education', type: 'education', title: 'Education', visible: true, order: 3 },
     { id: 'publications', type: 'publications', title: 'Publications', visible: false, order: 4 },
     { id: 'skills', type: 'skills', title: 'Technical Skills', visible: true, order: 5 },
+    { id: 'languages', type: 'languages', title: 'Languages', visible: false, order: 6 },
   ],
 };
