@@ -25,10 +25,18 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    const init = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+      }
+      const { data } = await supabase.auth.getSession();
       if (data.session) setHasSession(true);
       setCheckingSession(false);
-    });
+    };
+
+    init();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) {
