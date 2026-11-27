@@ -13,6 +13,70 @@ const PAGE_HEIGHT_PX = {
 };
 const PX_PER_MM = 3.7795275591;
 
+function computeSmartPageOffsets(
+  container: HTMLElement,
+  maxPageContentPx: number
+): { offsets: number[]; totalHeight: number } {
+  const totalHeight = container.scrollHeight;
+  if (totalHeight <= maxPageContentPx) {
+    return { offsets: [0], totalHeight };
+  }
+
+  const containerRect = container.getBoundingClientRect();
+  const candidates = Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'header, .rv-section-heading, .rv-entry, li, p'
+    )
+  );
+
+  // Collect atomic vertical ranges (top, bottom) sorted by top
+  const blocks: Array<{ top: number; bottom: number; isHeading: boolean }> = [];
+  for (const el of candidates) {
+    const r = el.getBoundingClientRect();
+    if (r.height <= 0) continue;
+    const top = Math.max(0, r.top - containerRect.top);
+    const bottom = Math.max(top, r.bottom - containerRect.top);
+    blocks.push({
+      top,
+      bottom,
+      isHeading: el.classList.contains('rv-section-heading'),
+    });
+  }
+  blocks.sort((a, b) => a.top - b.top);
+
+  const offsets: number[] = [0];
+  let pageStart = 0;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const blk = blocks[i];
+    const blkHeight = blk.bottom - blk.top;
+
+    // Skip oversized container blocks so their inner <li> / <p> children decide the break
+    if (blkHeight > maxPageContentPx) continue;
+
+    if (blk.bottom - pageStart > maxPageContentPx && blk.top > pageStart + 10) {
+      // Avoid orphan heading: if previous block was a section heading, break before the heading
+      let breakAt = blk.top;
+      if (i > 0 && blocks[i - 1].isHeading && blocks[i - 1].top > pageStart + 10) {
+        breakAt = blocks[i - 1].top;
+      }
+      if (breakAt > offsets[offsets.length - 1] + 10) {
+        offsets.push(breakAt);
+        pageStart = breakAt;
+      }
+    }
+  }
+
+  // Safety pass: if remaining tail still exceeds maxPageContentPx, add fallback step breaks
+  while (totalHeight - offsets[offsets.length - 1] > maxPageContentPx + 8) {
+    const next = offsets[offsets.length - 1] + maxPageContentPx;
+    if (next >= totalHeight) break;
+    offsets.push(next);
+  }
+
+  return { offsets, totalHeight };
+}
+
 export const PreviewCanvas: React.FC = () => {
   const resume = useResumeStore((s) => s.resume);
   const template = useResumeStore((s) => s.template);
@@ -24,7 +88,10 @@ export const PreviewCanvas: React.FC = () => {
   const deferredTemplate = useDeferredValue(template);
 
   const measureRef = useRef<HTMLDivElement>(null);
-  const [pageCount, setPageCount] = useState(1);
+  const [pagination, setPagination] = useState<{ offsets: number[]; totalHeight: number }>({
+    offsets: [0],
+    totalHeight: 0,
+  });
 
   const fontsHref = buildGoogleFontsHref([
     deferredTemplate.style.fontFamily,
@@ -43,16 +110,16 @@ export const PreviewCanvas: React.FC = () => {
   useEffect(() => {
     const el = measureRef.current;
     if (!el) return;
-    const updateCount = () => {
-      const totalH = el.scrollHeight;
-      const count = Math.max(1, Math.ceil((totalH - 4) / contentPerPagePx));
-      setPageCount(count);
+    const recalc = () => {
+      setPagination(computeSmartPageOffsets(el, contentPerPagePx));
     };
-    updateCount();
-    const observer = new ResizeObserver(updateCount);
+    recalc();
+    const observer = new ResizeObserver(recalc);
     observer.observe(el);
     return () => observer.disconnect();
   }, [contentPerPagePx, deferredResume, deferredTemplate]);
+
+  const pageCount = pagination.offsets.length;
 
   return (
     <div className="relative flex-1 h-full overflow-auto bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 print-container">
@@ -117,7 +184,13 @@ export const PreviewCanvas: React.FC = () => {
           width: widthMm,
         }}
       >
-        {Array.from({ length: pageCount }).map((_, pageIdx) => {
+        {pagination.offsets.map((sliceTop, pageIdx) => {
+          const nextTop = pagination.offsets[pageIdx + 1] ?? pagination.totalHeight;
+          const sliceHeight = Math.max(
+            0,
+            Math.min(contentPerPagePx, nextTop - sliceTop)
+          );
+
           const fc = deferredTemplate.style.footerConfig;
           const interpolate = (tpl: string) =>
             tpl
@@ -156,11 +229,11 @@ export const PreviewCanvas: React.FC = () => {
               >
                 <div
                   className="overflow-hidden"
-                  style={{ height: `${contentPerPagePx}px` }}
+                  style={{ height: `${sliceHeight}px` }}
                 >
                   <div
                     style={{
-                      transform: `translateY(-${pageIdx * contentPerPagePx}px)`,
+                      transform: `translateY(-${sliceTop}px)`,
                     }}
                   >
                     <UnifiedTemplateRenderer

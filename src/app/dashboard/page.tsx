@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Archive,
   Copy,
   FilePlus2,
   Loader2,
@@ -21,7 +20,6 @@ import {
   createCloudResume,
   deleteCloudResume,
   listCloudResumes,
-  setCloudResumeArchived,
 } from '@/lib/sync/resumes';
 
 export default function DashboardPage() {
@@ -36,7 +34,6 @@ export default function DashboardPage() {
 
   const [cloudResumes, setCloudResumes] = useState<CloudResumeRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
 
   const refreshCloud = async (silent = false) => {
     const supabase = getSupabaseBrowserClient();
@@ -69,13 +66,6 @@ export default function DashboardPage() {
     await refreshCloud();
   };
 
-  const handleArchiveToggle = async (item: CloudResumeRecord) => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-    await setCloudResumeArchived(supabase, item.id, !item.is_archived);
-    await refreshCloud();
-  };
-
   const handleDelete = async (id: string) => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
@@ -94,8 +84,6 @@ export default function DashboardPage() {
   if (isSupabaseConfigured() && !authUser) {
     return <AuthGate />;
   }
-
-  const visibleResumes = cloudResumes.filter((r) => (showArchived ? true : !r.is_archived));
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-6 sm:p-10">
@@ -116,17 +104,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {authUser && (
-              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  onChange={(e) => setShowArchived(e.target.checked)}
-                  className="accent-teal-600"
-                />
-                <span>Show archived</span>
-              </label>
-            )}
             <Link
               href="/create"
               className="inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white"
@@ -172,7 +149,7 @@ export default function DashboardPage() {
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading cloud resumes...</span>
           </div>
-        ) : visibleResumes.length === 0 ? (
+        ) : cloudResumes.length === 0 ? (
           <div className="p-10 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-center space-y-3">
             <h2 className="font-semibold text-sm">No saved resumes yet</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
@@ -190,20 +167,13 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visibleResumes.map((item) => (
+            {cloudResumes.map((item) => (
               <div
                 key={item.id}
                 className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between gap-4"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-semibold text-sm line-clamp-1">{item.title}</h2>
-                    {item.is_archived && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                        Archived
-                      </span>
-                    )}
-                  </div>
+                  <h2 className="font-semibold text-sm line-clamp-1">{item.title}</h2>
                   <p className="text-xs text-slate-500 mt-1">
                     Template: <span className="font-medium">{getTemplateMeta(item.template_id).name}</span>
                   </p>
@@ -231,14 +201,6 @@ export default function DashboardPage() {
                       className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleArchiveToggle(item)}
-                      title={item.is_archived ? 'Unarchive' : 'Archive'}
-                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
-                    >
-                      <Archive className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"

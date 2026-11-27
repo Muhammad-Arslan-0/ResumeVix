@@ -86,18 +86,6 @@ export async function deleteCloudResume(
   if (error) throw error;
 }
 
-export async function setCloudResumeArchived(
-  supabase: SupabaseClient,
-  resumeId: string,
-  isArchived: boolean
-): Promise<void> {
-  const { error } = await supabase
-    .from('resumes')
-    .update({ is_archived: isArchived, updated_at: new Date().toISOString() })
-    .eq('id', resumeId);
-  if (error) throw error;
-}
-
 /**
  * Conflict-free Guest-to-Cloud migration:
  * If the guest has unsynced local edits, insert their draft as a new cloud resume
