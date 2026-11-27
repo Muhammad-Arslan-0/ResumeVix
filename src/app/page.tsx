@@ -28,7 +28,30 @@ export default function ResumeVixWorkspace() {
 
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [authInitialError, setAuthInitialError] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const errorCode = searchParams.get('error_code') || hashParams.get('error_code');
+    const errorDesc = searchParams.get('error_description') || hashParams.get('error_description');
+
+    if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+      setAuthInitialMode('forgot');
+      setAuthInitialError(
+        'Your email link has expired or was already used. Please enter your email to request a new reset link.'
+      );
+      setAuthOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (errorDesc) {
+      setAuthInitialMode('signin');
+      setAuthInitialError(errorDesc.replace(/\+/g, ' '));
+      setAuthOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -53,8 +76,19 @@ export default function ResumeVixWorkspace() {
   if (isSupabaseConfigured() && !authUser) {
     return (
       <>
-        <LandingPage onOpenAuth={() => setAuthOpen(true)} />
-        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+        <LandingPage
+          onOpenAuth={() => {
+            setAuthInitialMode('signin');
+            setAuthInitialError(null);
+            setAuthOpen(true);
+          }}
+        />
+        <AuthModal
+          open={authOpen}
+          onClose={() => setAuthOpen(false)}
+          initialMode={authInitialMode}
+          initialError={authInitialError}
+        />
       </>
     );
   }

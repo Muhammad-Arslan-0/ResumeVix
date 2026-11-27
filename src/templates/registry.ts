@@ -20,23 +20,23 @@ export interface TemplateDefinition {
     | 'modern-accent'
     | 'executive-bold'
     | 'creative-pill'
-    | 'flowcv-banner';
+    | 'editorial-banner';
   headerStyle?: 'left' | 'centered' | 'banner' | 'split' | 'icon-centered';
   entryLayout?: 'stacked' | 'date-left-rail';
   sidebarRatio?: string; // e.g. "32% 1fr"
 }
 
 export const TEMPLATE_REGISTRY: TemplateDefinition[] = [
-  // --- FLOWCV SIGNATURE & ATS-COMPLIANT (8) ---
+  // --- RESUMEVIX SIGNATURE & ATS-COMPLIANT (8) ---
   {
-    id: 'flowcv-classic',
-    name: 'Classic Editorial (FlowCV Style)',
+    id: 'vix-classic',
+    name: 'Vix Classic Editorial',
     category: 'ats',
     description:
       'Centered serif header with contact icons, tinted section banners, 2-column date/location entries, and 3-column skills.',
     layout: 'single-column',
     atsScore: 'Strict ATS',
-    variant: 'flowcv-banner',
+    variant: 'editorial-banner',
     headerStyle: 'icon-centered',
     entryLayout: 'date-left-rail',
     defaultStyle: {
@@ -48,14 +48,14 @@ export const TEMPLATE_REGISTRY: TemplateDefinition[] = [
     },
   },
   {
-    id: 'flowcv-modern-teal',
-    name: 'Modern Editorial Teal',
+    id: 'vix-modern-teal',
+    name: 'Vix Modern Teal',
     category: 'executive',
     description:
-      'Crisp sans-serif FlowCV-inspired layout with soft teal section bars and 2-column timeline entries.',
+      'Crisp sans-serif ResumeVix layout with soft teal section bars and 2-column timeline entries.',
     layout: 'single-column',
     atsScore: 'Strict ATS',
-    variant: 'flowcv-banner',
+    variant: 'editorial-banner',
     headerStyle: 'icon-centered',
     entryLayout: 'date-left-rail',
     defaultStyle: {

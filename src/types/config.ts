@@ -27,7 +27,7 @@ export interface TemplateStyleTokens {
   // Granular Customize overrides
   headingVariant?:
     | 'auto'
-    | 'flowcv-banner'
+    | 'editorial-banner'
     | 'ats-minimal'
     | 'academic-ruled'
     | 'modern-accent'

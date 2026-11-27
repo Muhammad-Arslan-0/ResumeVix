@@ -143,7 +143,7 @@ export const DesignPanel: React.FC = () => {
 
   return (
     <div className="flex gap-3 h-full min-h-[420px]">
-      {/* Left FlowCV-style Customize Sub-Navigation Rail */}
+      {/* Left Customize Sub-Navigation Rail */}
       <nav
         aria-label="Customize sections"
         className="w-24 shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 space-y-0.5 text-[11px]"
@@ -333,7 +333,7 @@ export const DesignPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Change Section Layout (FlowCV-style) */}
+            {/* Change Section Layout */}
             <div className="space-y-2.5">
               <h3 className="font-semibold text-sm">Change Section Layout</h3>
 
@@ -935,7 +935,7 @@ export const DesignPanel: React.FC = () => {
                 {(
                   [
                     { id: 'ats-minimal', label: 'Bottom Rule' },
-                    { id: 'flowcv-banner', label: 'Banner' },
+                    { id: 'editorial-banner', label: 'Banner' },
                     { id: 'modern-accent', label: 'Accent Rule' },
                     { id: 'double-rule', label: 'Double Rule' },
                     { id: 'short-underline', label: 'Short Bar' },
@@ -945,8 +945,8 @@ export const DesignPanel: React.FC = () => {
                   ] as const
                 ).map((st) => {
                   const active =
-                    (template.style.headingVariant || 'flowcv-banner') === st.id ||
-                    (template.style.headingVariant === 'auto' && st.id === 'flowcv-banner');
+                    (template.style.headingVariant || 'editorial-banner') === st.id ||
+                    (template.style.headingVariant === 'auto' && st.id === 'editorial-banner');
                   return (
                     <button
                       key={st.id}
@@ -961,7 +961,7 @@ export const DesignPanel: React.FC = () => {
                     >
                       <div
                         className={`w-full h-3 rounded-[2px] flex items-center ${
-                          st.id === 'flowcv-banner'
+                          st.id === 'editorial-banner'
                             ? 'bg-current/20 justify-center'
                             : st.id === 'double-rule'
                               ? 'border-y border-current/50 justify-center'

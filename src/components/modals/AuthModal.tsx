@@ -1,20 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Loader2, LogIn, Mail, ShieldCheck, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, LogIn, Mail, X } from 'lucide-react';
 import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 interface AuthModalProps {
   open: boolean;
   onClose: () => void;
+  initialMode?: 'signin' | 'signup' | 'forgot';
+  initialError?: string | null;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+export const AuthModal: React.FC<AuthModalProps> = ({
+  open,
+  onClose,
+  initialMode = 'signin',
+  initialError = null,
+}) => {
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
+
+  useEffect(() => {
+    if (open) {
+      if (initialMode) setMode(initialMode);
+      if (initialError !== undefined) setError(initialError);
+    }
+  }, [open, initialMode, initialError]);
   const [verifyEmailSent, setVerifyEmailSent] = useState(false);
   const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);

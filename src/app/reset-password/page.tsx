@@ -10,6 +10,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
+  const [linkExpired, setLinkExpired] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,6 +28,13 @@ export default function ResetPasswordPage() {
 
     const init = async () => {
       const params = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const errorCode = params.get('error_code') || hashParams.get('error_code');
+      if (errorCode === 'otp_expired') {
+        setLinkExpired(true);
+        setCheckingSession(false);
+        return;
+      }
       const code = params.get('code');
       if (code) {
         await supabase.auth.exchangeCodeForSession(code);
@@ -128,15 +136,18 @@ export default function ResetPasswordPage() {
           </div>
         ) : !hasSession ? (
           <div className="py-3 text-center space-y-4 text-xs">
+            <h2 className="font-semibold text-sm text-slate-900 dark:text-white">
+              {linkExpired ? 'Reset link expired' : 'Invalid or expired link'}
+            </h2>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              This password reset link is invalid or has expired. Please request a new reset link
-              from the Sign In dialog.
+              Your email link has expired or was already used. Please use{' '}
+              <strong>Forgot password?</strong> again to request a fresh reset link.
             </p>
             <Link
-              href="/"
+              href="/?error_code=otp_expired"
               className="inline-block w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium"
             >
-              Back to Home
+              Request New Reset Link
             </Link>
           </div>
         ) : (

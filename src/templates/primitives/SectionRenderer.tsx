@@ -159,7 +159,7 @@ function SectionHeading({
       </div>
     );
   }
-  if (variant === 'flowcv-banner') {
+  if (variant === 'editorial-banner') {
     return (
       <h2
         style={{
@@ -519,9 +519,9 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                 <article key={proj.id} className="rv-entry break-inside-avoid">
                   <div className="flex justify-between items-baseline gap-2">
                     <div className="font-semibold inline-flex items-center gap-1.5">
-                      <span>{variant === 'flowcv-banner' ? `• ${proj.name}` : proj.name}</span>
+                      <span>{variant === 'editorial-banner' ? `• ${proj.name}` : proj.name}</span>
                       {proj.url &&
-                        (variant === 'flowcv-banner' ? (
+                        (variant === 'editorial-banner' ? (
                           <ExternalLink className="w-3 h-3 text-[var(--rv-muted)] inline" />
                         ) : (
                           <span className="font-normal text-[0.88em] text-[var(--rv-muted)]">
@@ -543,11 +543,11 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                   {proj.bullets.length > 0 && (
                     <ul
                       className={`${
-                        variant === 'flowcv-banner' ? 'pl-3 list-none' : 'pl-4 list-disc'
+                        variant === 'editorial-banner' ? 'pl-3 list-none' : 'pl-4 list-disc'
                       } mt-0.5 space-y-0.5 text-[0.94em]`}
                     >
                       {proj.bullets.map((b, i) => (
-                        <li key={i} className={variant === 'flowcv-banner' ? 'italic' : ''}>
+                        <li key={i} className={variant === 'editorial-banner' ? 'italic' : ''}>
                           {b}
                         </li>
                       ))}
@@ -565,7 +565,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
         if (visibleItems.length === 0) return null;
         const effectiveSkillsLayout =
           sc.skillsLayout ||
-          (variant === 'flowcv-banner'
+          (variant === 'editorial-banner'
             ? 'grid'
             : variant === 'creative-pill'
               ? 'bubble'

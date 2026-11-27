@@ -201,7 +201,7 @@ export const ACADEMIC_CV_PRESET: ResumeData = {
 };
 
 export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
-  templateId: 'flowcv-classic',
+  templateId: 'vix-classic',
   pageSize: 'A4',
   style: {
     fontFamily: 'Lora',

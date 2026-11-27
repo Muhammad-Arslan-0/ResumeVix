@@ -875,7 +875,7 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
         </SortableContext>
       </DndContext>
 
-      {/* Add Content / Section Button (FlowCV-style) */}
+      {/* Add Content / Section Button */}
       <div className="pt-2">
         <button
           type="button"
