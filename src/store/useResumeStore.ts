@@ -188,9 +188,15 @@ export const useResumeStore = create<ResumeStoreState>()(
 
       loadCloudResume: (id, resume, template) =>
         set((state) => {
+          const normalizedTemplateId =
+            template.templateId === 'flowcv-classic'
+              ? 'vix-classic'
+              : template.templateId === 'flowcv-modern-teal'
+                ? 'vix-modern-teal'
+                : template.templateId;
           state.activeResumeId = id;
           state.resume = resume;
-          state.template = template;
+          state.template = { ...template, templateId: normalizedTemplateId };
           state.hasLocalEdits = false;
           state.past = [];
           state.future = [];

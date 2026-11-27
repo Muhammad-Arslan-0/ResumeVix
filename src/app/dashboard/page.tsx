@@ -15,6 +15,7 @@ import { useResumeStore } from '@/store/useResumeStore';
 import { useCloudAutoSave } from '@/hooks/useCloudAutoSave';
 import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { AuthGate } from '@/components/auth/AuthGate';
+import { getTemplateMeta } from '@/templates/registry';
 import {
   CloudResumeRecord,
   createCloudResume,
@@ -203,7 +204,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Template: <span className="font-mono">{item.template_id}</span>
+                    Template: <span className="font-medium">{getTemplateMeta(item.template_id).name}</span>
                   </p>
                   <p className="text-[11px] text-slate-400 mt-1">
                     Updated {new Date(item.updated_at).toLocaleDateString()}
