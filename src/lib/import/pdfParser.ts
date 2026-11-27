@@ -77,17 +77,33 @@ function uid(prefix: string, idx: number): string {
   return `${prefix}-${Date.now()}-${idx}`;
 }
 
-export async function extractTextFromPdf(file: File): Promise<string> {
+export interface ExtractedPdfContent {
+  text: string;
+  links: string[];
+}
+
+export async function extractTextFromPdf(file: File): Promise<ExtractedPdfContent> {
   const pdfjs = await import('pdfjs-dist');
   pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
   const buffer = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buffer }).promise;
   const pages: string[] = [];
+  const links: string[] = [];
 
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
-    const content = await page.getTextContent();
+    const [content, annotations] = await Promise.all([
+      page.getTextContent(),
+      page.getAnnotations().catch(() => []),
+    ]);
+
+    for (const annot of annotations as Array<{ url?: string }>) {
+      if (annot?.url && typeof annot.url === 'string') {
+        links.push(annot.url);
+      }
+    }
+
     const lines: string[] = [];
     let currentLine: string[] = [];
     let lastY: number | null = null;
@@ -106,7 +122,10 @@ export async function extractTextFromPdf(file: File): Promise<string> {
     pages.push(lines.filter(Boolean).join('\n'));
   }
 
-  return pages.join('\n').trim();
+  return {
+    text: pages.join('\n').trim(),
+    links: Array.from(new Set(links)),
+  };
 }
 
 const SECTION_HEADER_PATTERNS: Array<{ key: string; regex: RegExp }> = [
@@ -119,11 +138,46 @@ const SECTION_HEADER_PATTERNS: Array<{ key: string; regex: RegExp }> = [
   { key: 'publications', regex: /^publications$/i },
 ];
 
-export function parseResumeTextHeuristic(rawText: string): ResumeData {
-  const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+const DATE_RANGE_REGEX =
+  /^(\d{4}(?:\/\d{2}|-\d{2})?)\s*[–-]\s*(\d{4}(?:\/\d{2}|-\d{2})?|Present|Current)$/i;
+
+function joinWrappedBullets(lines: string[]): string[] {
+  const bullets: string[] = [];
+  for (const line of lines) {
+    if (/^[•\-*]\s*/.test(line)) {
+      bullets.push(line.replace(/^[•\-*]\s*/, '').trim());
+    } else if (bullets.length > 0) {
+      bullets[bullets.length - 1] = `${bullets[bullets.length - 1]} ${line}`.trim();
+    } else {
+      bullets.push(line);
+    }
+  }
+  return bullets.filter(Boolean);
+}
+
+export function parseResumeTextHeuristic(
+  rawText: string,
+  extractedLinks: string[] = []
+): ResumeData {
+  const combinedForLinks = `${rawText}\n${extractedLinks.join('\n')}`;
+  const emailMatch = combinedForLinks.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   const phoneMatch = rawText.match(/(\+?\(?\d{1,4}\)?[\d\s\-()]{6,16}\d)/);
-  const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
-  const githubMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i);
+
+  const linkedinLink =
+    extractedLinks.find((l) => /linkedin\.com\/in\//i.test(l)) ||
+    rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0];
+  const githubLink =
+    extractedLinks.find((l) => /github\.com\//i.test(l)) ||
+    rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i)?.[0];
+  const websiteLink =
+    extractedLinks.find(
+      (l) =>
+        !/mailto:|linkedin\.com|github\.com/i.test(l) &&
+        /^https?:\/\//i.test(l)
+    ) ||
+    rawText.match(
+      /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:web\.app|vercel\.app|netlify\.app|github\.io|dev|io)\b(?:\/[^\s]*)?/i
+    )?.[0];
 
   const lines = rawText
     .split(/\r?\n/)
@@ -151,6 +205,12 @@ export function parseResumeTextHeuristic(rawText: string): ResumeData {
       ? headerLines[1]
       : '';
 
+  // Try to detect location like "Lahore, Pakistan" or "San Francisco, CA" in header
+  const locationLine = headerLines
+    .slice(2)
+    .join(' ')
+    .match(/\b([A-Z][a-zA-Z\s]+,\s*(?:[A-Z]{2}|[A-Z][a-zA-Z]+))\b/)?.[1];
+
   const summaryText = (buckets.summary || []).join(' ').trim();
   const expLines = buckets.experience || [];
   const eduLines = buckets.education || [];
@@ -158,35 +218,108 @@ export function parseResumeTextHeuristic(rawText: string): ResumeData {
   const projectLines = buckets.projects || [];
   const languageLines = buckets.languages || [];
 
+  // Parse multiple Experience entries split by date ranges
   const experience: ResumeData['experience'] = [];
   if (expLines.length > 0) {
-    experience.push({
-      id: uid('exp', 0),
-      company: '',
-      role: expLines[0] || 'Experience',
-      startDate: '',
-      endDate: '',
-      current: false,
-      visible: true,
-      bullets: expLines
-        .slice(1)
-        .map((l) => l.replace(/^[•\-*]\s*/, ''))
-        .filter(Boolean),
-    });
+    let currentExp: ResumeData['experience'][number] | null = null;
+    let pendingBullets: string[] = [];
+
+    const flushExp = () => {
+      if (!currentExp) return;
+      currentExp.bullets = joinWrappedBullets(pendingBullets);
+      experience.push(currentExp);
+      pendingBullets = [];
+    };
+
+    for (const line of expLines) {
+      const dateMatch = line.match(DATE_RANGE_REGEX);
+      if (dateMatch) {
+        flushExp();
+        currentExp = {
+          id: uid('exp', experience.length),
+          company: '',
+          role: '',
+          startDate: dateMatch[1],
+          endDate: dateMatch[2],
+          current: /present|current/i.test(dateMatch[2]),
+          bullets: [],
+          visible: true,
+        };
+        continue;
+      }
+      if (!currentExp) {
+        currentExp = {
+          id: uid('exp', 0),
+          company: '',
+          role: line,
+          startDate: '',
+          endDate: '',
+          current: false,
+          bullets: [],
+          visible: true,
+        };
+        continue;
+      }
+      if (!currentExp.role && !/^[•\-*]/.test(line)) {
+        if (line.includes(',')) {
+          const [rolePart, ...compParts] = line.split(',');
+          currentExp.role = rolePart.trim();
+          currentExp.company = compParts.join(',').trim();
+        } else {
+          currentExp.role = line;
+        }
+      } else if (!currentExp.location && pendingBullets.length === 0 && !/^[•\-*]/.test(line) && line.length < 45) {
+        currentExp.location = line;
+      } else {
+        pendingBullets.push(line);
+      }
+    }
+    flushExp();
   }
 
+  // Parse Education entries
   const education: ResumeData['education'] = [];
   if (eduLines.length > 0) {
+    let startDate = '';
+    let endDate = '';
+    let location = '';
+    let degree = '';
+    let institution = '';
+    let gpa = '';
+
+    for (const line of eduLines) {
+      const dateMatch = line.match(DATE_RANGE_REGEX);
+      if (dateMatch) {
+        startDate = dateMatch[1];
+        endDate = dateMatch[2];
+      } else if (/^GPA:/i.test(line)) {
+        gpa = line.replace(/^GPA:\s*/i, '').trim();
+      } else if (!degree && !/^[•\-*]/.test(line)) {
+        if (line.includes(',')) {
+          const [deg, ...inst] = line.split(',');
+          degree = deg.trim();
+          institution = inst.join(',').trim();
+        } else {
+          degree = line;
+        }
+      } else if (!location && line.length < 40) {
+        location = line;
+      }
+    }
+
     education.push({
       id: uid('edu', 0),
-      institution: eduLines.slice(1).join(' — ') || '',
-      degree: eduLines[0] || 'Education',
-      startDate: '',
-      endDate: '',
+      institution: institution || location,
+      degree: degree || eduLines[0],
+      location: institution ? location : undefined,
+      startDate,
+      endDate,
+      gpa: gpa || undefined,
       visible: true,
     });
   }
 
+  // Parse Skills
   const skills: ResumeData['skills'] =
     skillLines.length > 0
       ? [
@@ -203,18 +336,46 @@ export function parseResumeTextHeuristic(rawText: string): ResumeData {
         ]
       : [];
 
-  const projects: ResumeData['projects'] =
-    projectLines.length > 0
-      ? [
-          {
-            id: uid('proj', 0),
-            name: projectLines[0].replace(/^[•\-*]\s*/, ''),
-            technologies: [],
-            bullets: projectLines.slice(1),
-            visible: true,
-          },
-        ]
-      : [];
+  // Parse multiple Projects (split on `* ProjectName` or `• ProjectName`)
+  const projects: ResumeData['projects'] = [];
+  if (projectLines.length > 0) {
+    let currentProj: ResumeData['projects'][number] | null = null;
+    let descLines: string[] = [];
+
+    const flushProj = () => {
+      if (!currentProj) return;
+      const merged = descLines.join(' ').replace(/\s+/g, ' ').trim();
+      currentProj.bullets = merged ? [merged] : [];
+      projects.push(currentProj);
+      descLines = [];
+    };
+
+    for (const line of projectLines) {
+      const isHeadingMarker = /^[*•]\s+/.test(line) && line.length < 60;
+      if (isHeadingMarker) {
+        flushProj();
+        const name = line.replace(/^[*•]\s+/, '').trim();
+        currentProj = {
+          id: uid('proj', projects.length),
+          name,
+          technologies: [],
+          bullets: [],
+          visible: true,
+        };
+      } else if (!currentProj) {
+        currentProj = {
+          id: uid('proj', 0),
+          name: line,
+          technologies: [],
+          bullets: [],
+          visible: true,
+        };
+      } else {
+        descLines.push(line);
+      }
+    }
+    flushProj();
+  }
 
   const customSections: ResumeData['customSections'] = {};
   if (languageLines.length > 0) {
@@ -241,9 +402,10 @@ export function parseResumeTextHeuristic(rawText: string): ResumeData {
       headline,
       email: emailMatch?.[0] || '',
       phone: phoneMatch?.[0]?.trim() || '',
-      location: '',
-      linkedin: linkedinMatch?.[0],
-      github: githubMatch?.[0],
+      location: locationLine || '',
+      website: websiteLink,
+      linkedin: linkedinLink,
+      github: githubLink,
     },
     summary: summaryText || (!expLines.length ? rawText.slice(0, 600) : ''),
     experience,
@@ -259,7 +421,7 @@ export async function parsePdfToResumeData(
   file: File,
   aiConfig: AIConfig
 ): Promise<{ data: ResumeData; usedAI: boolean }> {
-  const rawText = await extractTextFromPdf(file);
+  const { text: rawText, links } = await extractTextFromPdf(file);
   if (!rawText || rawText.length < 20) {
     throw new Error(
       'Could not extract selectable text from this PDF. Please ensure it is not a scanned image.'
@@ -267,7 +429,7 @@ export async function parsePdfToResumeData(
   }
 
   const systemPrompt = `You are an expert resume & academic CV parser.
-Extract structured details from the provided CV text into valid JSON matching:
+Extract structured details from the provided CV text and embedded links into valid JSON matching:
 {
   "profile": { "fullName", "headline", "email", "phone", "location", "website"?, "linkedin"?, "github"?, "orcid"? },
   "summary": string,
@@ -279,11 +441,16 @@ Extract structured details from the provided CV text into valid JSON matching:
 }
 Preserve factual details accurately.`;
 
+  const aiInput =
+    links.length > 0
+      ? `${rawText.slice(0, 17000)}\n\nExtracted PDF Links:\n${links.join('\n')}`
+      : rawText.slice(0, 18000);
+
   try {
     const parsed = (await executeStructuredAI(
       aiConfig,
       systemPrompt,
-      rawText.slice(0, 18000),
+      aiInput,
       ParsedResumeSchema,
       'light'
     )) as z.infer<typeof ParsedResumeSchema>;
@@ -356,7 +523,6 @@ Preserve factual details accurately.`;
 
     return { data, usedAI: true };
   } catch {
-    // Fallback to local heuristic extraction if AI key/server is unavailable
-    return { data: parseResumeTextHeuristic(rawText), usedAI: false };
+    return { data: parseResumeTextHeuristic(rawText, links), usedAI: false };
   }
 }
