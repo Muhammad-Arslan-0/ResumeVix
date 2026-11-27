@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  ChevronDown,
   Download,
+  FileJson,
+  FileText,
   FileUp,
   FolderKanban,
   KeyRound,
   LogIn,
   LogOut,
   Moon,
-  Printer,
   Redo2,
   Sparkles,
   Sun,
@@ -53,7 +55,27 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const redo = useResumeStore((s) => s.redo);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExportMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [exportMenuOpen]);
 
   const providerMeta = getProviderMeta(aiConfig.provider);
   const hasKey = Boolean(aiConfig.apiKey.trim()) || aiConfig.provider === 'custom';
@@ -251,16 +273,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
         <button
           type="button"
-          onClick={() => exportResumeToJson(resume, template)}
-          aria-label="Export JSON"
-          title="Export JSON Backup"
-          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-        >
-          <Download className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
           onClick={toggleEditorTheme}
           aria-label="Toggle editor theme"
           title="Toggle Dark/Light Theme"
@@ -269,16 +281,68 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           {editorTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        <button
-          type="button"
-          onClick={() =>
-            triggerPrintPdf(template.pageSize, `${resume.profile.fullName || 'ResumeVix'}_CV`)
-          }
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          <span>Export PDF</span>
-        </button>
+        <div ref={exportMenuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setExportMenuOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={exportMenuOpen}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export</span>
+            <ChevronDown className="w-3.5 h-3.5 opacity-90" />
+          </button>
+
+          {exportMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Export options"
+              className="absolute right-0 mt-1.5 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1.5 z-50"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  requestAnimationFrame(() => {
+                    triggerPrintPdf(
+                      template.pageSize,
+                      `${resume.profile.fullName || 'ResumeVix'}_CV`
+                    );
+                  });
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                <div>
+                  <div className="font-medium">Save as PDF</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Vector PDF ({template.pageSize === 'A4' ? 'A4' : 'US Letter'})
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setExportMenuOpen(false);
+                  exportResumeToJson(resume, template);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <FileJson className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                <div>
+                  <div className="font-medium">Save as JSON</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Portable resume backup
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -26,6 +26,7 @@
   }
 
   .print-container {
+    display: block !important;
     position: static !important;
     width: 100% !important;
     height: auto !important;
@@ -34,6 +35,14 @@
     margin: 0 !important;
     background: #ffffff !important;
     transform: none !important;
+  }
+
+  .print-container > * {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
   }
 
   .resume-page {

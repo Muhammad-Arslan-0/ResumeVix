@@ -102,7 +102,7 @@ export default function ResumeVixWorkspace() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 print:h-auto print:w-auto print:overflow-visible print:block print:bg-white">
       <TopToolbar
         onOpenAISettings={() => setAiSettingsOpen(true)}
         onOpenAuth={() => setAuthOpen(true)}
@@ -110,7 +110,7 @@ export default function ResumeVixWorkspace() {
         onToggleMobileView={setMobileView}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden print:block print:h-auto print:overflow-visible">
         {/* Left Editor Sidebar */}
         <aside
           className={`no-print w-full lg:w-[440px] xl:w-[480px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col ${
@@ -174,7 +174,7 @@ export default function ResumeVixWorkspace() {
 
         {/* Right Live Preview Canvas */}
         <main
-          className={`flex-1 flex overflow-hidden print-container ${
+          className={`flex-1 flex overflow-hidden print-container print:block print:h-auto print:overflow-visible ${
             mobileView === 'preview' ? 'flex' : 'hidden lg:flex'
           }`}
         >
