@@ -5,13 +5,14 @@ import { Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export const AuthGate: React.FC = () => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyEmailSent, setVerifyEmailSent] = useState(false);
   const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,13 @@ export const AuthGate: React.FC = () => {
     setEmailAlreadyExists(false);
 
     try {
-      if (mode === 'signup') {
+      if (mode === 'forgot') {
+        const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        });
+        if (err) throw err;
+        setResetEmailSent(true);
+      } else if (mode === 'signup') {
         const { data, error: err } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -63,14 +70,11 @@ export const AuthGate: React.FC = () => {
         setEmailAlreadyExists(true);
         return;
       }
-      const details = [
-        authErr?.status ? `HTTP ${authErr.status}` : '',
-        authErr?.code ? `[${authErr.code}]` : '',
-        authErr?.message || 'Authentication failed',
-      ]
-        .filter(Boolean)
-        .join(' ');
-      setError(details);
+      if (authErr?.code === 'invalid_credentials' || msgLower.includes('invalid login credentials')) {
+        setError('Invalid email or password.');
+        return;
+      }
+      setError(authErr?.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -86,7 +90,11 @@ export const AuthGate: React.FC = () => {
             className="w-12 h-12 rounded-xl shadow-md object-cover"
           />
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {mode === 'signin' ? 'Sign in to ResumeVix' : 'Create your ResumeVix account'}
+            {mode === 'signin'
+              ? 'Sign in to ResumeVix'
+              : mode === 'signup'
+                ? 'Create your ResumeVix account'
+                : 'Reset your password'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             AI-Powered ATS Resume & Academic CV Studio
@@ -159,6 +167,33 @@ export const AuthGate: React.FC = () => {
               Back to Sign In
             </button>
           </div>
+        ) : resetEmailSent ? (
+          <div className="py-2 text-center space-y-4 text-xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Mail className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="font-semibold text-sm text-slate-900 dark:text-white">
+                Check your email
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                We sent a password reset link to{' '}
+                <strong className="text-slate-900 dark:text-white">{email}</strong>. Click the link
+                in your inbox to set a new password.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setResetEmailSent(false);
+                setMode('signin');
+                setError(null);
+              }}
+              className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium"
+            >
+              Back to Sign In
+            </button>
+          </div>
         ) : (
           <>
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -176,20 +211,36 @@ export const AuthGate: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
+              {mode !== 'forgot' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-medium text-slate-700 dark:text-slate-300">
+                      Password
+                    </label>
+                    {mode === 'signin' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setError(null);
+                        }}
+                        className="text-teal-600 dark:text-teal-400 hover:underline font-medium"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              )}
 
               {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
@@ -199,22 +250,43 @@ export const AuthGate: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium disabled:opacity-50 transition"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                <span>
+                  {mode === 'signin'
+                    ? 'Sign In'
+                    : mode === 'signup'
+                      ? 'Create Account'
+                      : 'Send Reset Link'}
+                </span>
               </button>
             </form>
 
             <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
-                  setError(null);
-                }}
-                className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
-              >
-                {mode === 'signin' ? 'Sign up' : 'Sign in'}
-              </button>
+              {mode === 'forgot' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signin');
+                    setError(null);
+                  }}
+                  className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
+                >
+                  Back to Sign In
+                </button>
+              ) : (
+                <>
+                  {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === 'signin' ? 'signup' : 'signin');
+                      setError(null);
+                    }}
+                    className="text-teal-600 dark:text-teal-400 font-medium hover:underline"
+                  >
+                    {mode === 'signin' ? 'Sign up' : 'Sign in'}
+                  </button>
+                </>
+              )}
             </p>
           </>
         )}
