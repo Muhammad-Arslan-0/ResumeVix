@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  AlertTriangle,
   Copy,
   FilePlus2,
   Loader2,
@@ -34,6 +35,8 @@ export default function DashboardPage() {
 
   const [cloudResumes, setCloudResumes] = useState<CloudResumeRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<CloudResumeRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const refreshCloud = async (silent = false) => {
     const supabase = getSupabaseBrowserClient();
@@ -66,12 +69,30 @@ export default function DashboardPage() {
     await refreshCloud();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    await deleteCloudResume(supabase, id);
-    await refreshCloud();
+    setDeleting(true);
+    try {
+      await deleteCloudResume(supabase, pendingDelete.id);
+      setPendingDelete(null);
+      await refreshCloud(true);
+    } finally {
+      setDeleting(false);
+    }
   };
+
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleting) {
+        setPendingDelete(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [pendingDelete, deleting]);
 
   if (authChecking) {
     return (
@@ -204,8 +225,9 @@ export default function DashboardPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setPendingDelete(item)}
                       title="Delete"
+                      aria-label={`Delete ${item.title}`}
                       className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-500 hover:text-red-600"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -217,6 +239,64 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {pendingDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-resume-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4"
+          onClick={() => {
+            if (!deleting) setPendingDelete(null);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h2
+                  id="delete-resume-title"
+                  className="text-sm font-semibold text-slate-900 dark:text-white"
+                >
+                  Delete Resume?
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Are you sure you want to delete{' '}
+                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                    {pendingDelete.title}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setPendingDelete(null)}
+                className="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-medium transition"
+              >
+                {deleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{deleting ? 'Deleting...' : 'Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
