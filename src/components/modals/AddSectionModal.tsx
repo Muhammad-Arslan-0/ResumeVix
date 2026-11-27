@@ -40,9 +40,22 @@ const SECTION_CATALOG = [
 export const AddSectionModal: React.FC<AddSectionModalProps> = ({ open, onClose }) => {
   const addCustomSection = useResumeStore((s) => s.addCustomSection);
   const enableLanguagesSection = useResumeStore((s) => s.enableLanguagesSection);
+  const sections = useResumeStore((s) => s.template.sections);
+  const customSections = useResumeStore((s) => s.resume.customSections);
   const [customTitle, setCustomTitle] = useState('');
 
   if (!open) return null;
+
+  const isLanguagesAdded = sections.some((s) => s.type === 'languages' && s.visible);
+  const existingTitles = new Set([
+    ...sections.map((s) => s.title.trim().toLowerCase()),
+    ...Object.values(customSections).map((cs) => cs.title.trim().toLowerCase()),
+  ]);
+
+  const availableCatalog = SECTION_CATALOG.filter((item) => {
+    if (item.title === 'Languages') return !isLanguagesAdded;
+    return !existingTitles.has(item.title.trim().toLowerCase());
+  });
 
   const handleSelect = (title: string) => {
     if (title === 'Languages') {
@@ -79,8 +92,9 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({ open, onClose 
         </div>
 
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {SECTION_CATALOG.map((item) => {
+          {availableCatalog.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {availableCatalog.map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -97,7 +111,8 @@ export const AddSectionModal: React.FC<AddSectionModalProps> = ({ open, onClose 
                 </button>
               );
             })}
-          </div>
+            </div>
+          )}
 
           <form
             onSubmit={(e) => {
