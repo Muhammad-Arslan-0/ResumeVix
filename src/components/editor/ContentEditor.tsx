@@ -23,6 +23,7 @@ import {
   Link2,
   Loader2,
   Plus,
+  Search,
   Sparkles,
   Trash2,
   X,
@@ -45,6 +46,65 @@ import { SectionConfig } from '@/types';
 
 const inputClass =
   'w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500';
+
+const PERSONAL_DETAIL_OPTIONS: Array<{ key: string; label: string; placeholder: string }> = [
+  { key: 'nationality', label: 'Nationality', placeholder: 'e.g. Pakistani' },
+  { key: 'dob', label: 'Date of Birth', placeholder: 'e.g. 15 May 1998' },
+  { key: 'visa', label: 'Visa', placeholder: 'e.g. Work Permit / Citizen' },
+  { key: 'passport', label: 'Passport or Id', placeholder: 'e.g. ID / Passport No.' },
+  { key: 'availability', label: 'Availability', placeholder: 'e.g. Immediate / 2 weeks notice' },
+  { key: 'gender', label: 'Gender/Pronoun', placeholder: 'e.g. He/Him' },
+  { key: 'disability', label: 'Disability', placeholder: 'Optional' },
+  { key: 'workMode', label: 'Work mode', placeholder: 'e.g. Remote / Hybrid / On-site' },
+  { key: 'relocation', label: 'Relocation', placeholder: 'e.g. Open to relocate' },
+  { key: 'expectedSalary', label: 'Expected salary', placeholder: 'e.g. \$90,000 / year' },
+  { key: 'secondPhone', label: 'Second phone', placeholder: 'e.g. +1 555 0199' },
+  { key: 'drivingLicense', label: 'Driving License', placeholder: 'e.g. Full / Class B' },
+  { key: 'securityClearance', label: 'Security clearance', placeholder: 'e.g. Secret' },
+  { key: 'maritalStatus', label: 'Marital status', placeholder: 'e.g. Single / Married' },
+  { key: 'militaryService', label: 'Military Service', placeholder: 'e.g. Completed / Exempt' },
+  { key: 'smoking', label: 'Smoking', placeholder: 'e.g. Non-smoker' },
+  { key: 'height', label: 'Height', placeholder: 'e.g. 5\'10"' },
+  { key: 'weight', label: 'Weight', placeholder: 'e.g. 72 kg' },
+];
+
+const SOCIAL_LINK_OPTIONS: Array<{
+  key: string;
+  label: string;
+  placeholder: string;
+  urlPlaceholder: string;
+}> = [
+  { key: 'threads', label: 'Threads', placeholder: '@username', urlPlaceholder: 'https://threads.net/@username' },
+  { key: 'x', label: 'X', placeholder: '@username', urlPlaceholder: 'https://x.com/username' },
+  { key: 'discord', label: 'Discord', placeholder: 'username', urlPlaceholder: 'https://discord.com/users/...' },
+  { key: 'dribbble', label: 'Dribbble', placeholder: 'dribbble.com/username', urlPlaceholder: 'https://dribbble.com/username' },
+  { key: 'behance', label: 'Behance', placeholder: 'behance.net/username', urlPlaceholder: 'https://behance.net/username' },
+  { key: 'stackoverflow', label: 'Stack Overflow', placeholder: 'stackoverflow.com/users/...', urlPlaceholder: 'https://stackoverflow.com/users/...' },
+  { key: 'gitlab', label: 'GitLab', placeholder: 'gitlab.com/username', urlPlaceholder: 'https://gitlab.com/username' },
+  { key: 'quora', label: 'Quora', placeholder: 'quora.com/profile/...', urlPlaceholder: 'https://quora.com/profile/...' },
+  { key: 'facebook', label: 'Facebook', placeholder: 'facebook.com/username', urlPlaceholder: 'https://facebook.com/username' },
+  { key: 'instagram', label: 'Instagram', placeholder: '@username', urlPlaceholder: 'https://instagram.com/username' },
+  { key: 'wechat', label: 'WeChat', placeholder: 'WeChat ID', urlPlaceholder: 'https://wechat.com' },
+  { key: 'huggingface', label: 'Hugging Face', placeholder: 'huggingface.co/username', urlPlaceholder: 'https://huggingface.co/username' },
+  { key: 'kaggle', label: 'Kaggle', placeholder: 'kaggle.com/username', urlPlaceholder: 'https://kaggle.com/username' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'youtube.com/@channel', urlPlaceholder: 'https://youtube.com/@channel' },
+  { key: 'tiktok', label: 'TikTok', placeholder: '@username', urlPlaceholder: 'https://tiktok.com/@username' },
+  { key: 'signal', label: 'Signal', placeholder: 'Signal handle / number', urlPlaceholder: 'https://signal.me/...' },
+  { key: 'telegram', label: 'Telegram', placeholder: '@username', urlPlaceholder: 'https://t.me/username' },
+  { key: 'whatsapp', label: 'WhatsApp', placeholder: '+1 555 123 4567', urlPlaceholder: 'https://wa.me/...' },
+  { key: 'paypal', label: 'PayPal', placeholder: 'paypal.me/username', urlPlaceholder: 'https://paypal.me/username' },
+  { key: 'producthunt', label: 'Product Hunt', placeholder: '@username', urlPlaceholder: 'https://producthunt.com/@username' },
+  { key: 'artstation', label: 'ArtStation', placeholder: 'artstation.com/username', urlPlaceholder: 'https://artstation.com/username' },
+  { key: 'codepen', label: 'CodePen', placeholder: 'codepen.io/username', urlPlaceholder: 'https://codepen.io/username' },
+  { key: 'fiverr', label: 'Fiverr', placeholder: 'fiverr.com/username', urlPlaceholder: 'https://fiverr.com/username' },
+  { key: 'hashnode', label: 'Hashnode', placeholder: 'hashnode.com/@username', urlPlaceholder: 'https://hashnode.com/@username' },
+  { key: 'pluralsight', label: 'Pluralsight', placeholder: 'Pluralsight profile', urlPlaceholder: 'https://app.pluralsight.com/profile/...' },
+  { key: 'medium', label: 'Medium', placeholder: '@username', urlPlaceholder: 'https://medium.com/@username' },
+  { key: 'devto', label: 'Dev.to', placeholder: 'dev.to/username', urlPlaceholder: 'https://dev.to/username' },
+  { key: 'leetcode', label: 'LeetCode', placeholder: 'leetcode.com/username', urlPlaceholder: 'https://leetcode.com/username' },
+  { key: 'scholar', label: 'Google Scholar', placeholder: 'Google Scholar profile', urlPlaceholder: 'https://scholar.google.com/citations?user=...' },
+  { key: 'orcid', label: 'ORCID', placeholder: 'e.g. 0000-0002-1825-0097', urlPlaceholder: 'https://orcid.org/0000-0002-1825-0097' },
+];
 
 export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   onOpenSettings,
@@ -91,6 +151,9 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
   const [openLinkField, setOpenLinkField] = useState<
     'linkedin' | 'website' | 'github' | 'orcid' | null
   >(null);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [detailsSearch, setDetailsSearch] = useState('');
+  const [openExtraLinkId, setOpenExtraLinkId] = useState<string | null>(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     profile: true,
@@ -998,13 +1061,6 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
                   placeholder: 'e.g. Muhammad-Arslan-0',
                   urlPlaceholder: 'https://github.com/...',
                 },
-                {
-                  key: 'orcid',
-                  urlKey: 'orcidUrl',
-                  label: 'ORCID',
-                  placeholder: 'e.g. 0000-0002-1825-0097',
-                  urlPlaceholder: 'https://orcid.org/...',
-                },
               ] as const
             ).map((field) => {
               const displayValue = resume.profile[field.key] || '';
@@ -1064,6 +1120,221 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
                 </div>
               );
             })}
+
+            {/* Added Extra Personal Details & Social Links */}
+            {(resume.profile.extraDetails || []).map((detail) => {
+              const isLink = detail.category === 'link';
+              const isUrlOpen = openExtraLinkId === detail.id;
+              const hasUrl = Boolean(detail.url?.trim());
+              const meta = isLink
+                ? SOCIAL_LINK_OPTIONS.find((o) => o.key === detail.key)
+                : PERSONAL_DETAIL_OPTIONS.find((o) => o.key === detail.key);
+
+              return (
+                <div key={detail.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      {detail.label}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateProfile({
+                          extraDetails: (resume.profile.extraDetails || []).filter(
+                            (d) => d.id !== detail.id
+                          ),
+                        })
+                      }
+                      title={`Remove ${detail.label}`}
+                      className="text-slate-400 hover:text-red-500 p-0.5"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      value={detail.value}
+                      onChange={(e) =>
+                        updateProfile({
+                          extraDetails: (resume.profile.extraDetails || []).map((d) =>
+                            d.id === detail.id ? { ...d, value: e.target.value } : d
+                          ),
+                        })
+                      }
+                      placeholder={meta?.placeholder || detail.label}
+                      className={`${inputClass} ${isLink ? 'pr-16' : ''}`}
+                    />
+                    {isLink && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenExtraLinkId(isUrlOpen ? null : detail.id)}
+                        title={hasUrl ? `Linked: ${detail.url}` : `Add ${detail.label} URL`}
+                        className={`absolute right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${
+                          isUrlOpen || hasUrl
+                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'
+                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600'
+                        }`}
+                      >
+                        <Link2 className="w-3 h-3" />
+                        <span>Link</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isLink && isUrlOpen && (
+                    <div className="flex items-center gap-1.5 pl-2 border-l-2 border-teal-500/60">
+                      <input
+                        type="url"
+                        value={detail.url || ''}
+                        onChange={(e) =>
+                          updateProfile({
+                            extraDetails: (resume.profile.extraDetails || []).map((d) =>
+                              d.id === detail.id ? { ...d, url: e.target.value } : d
+                            ),
+                          })
+                        }
+                        placeholder={
+                          SOCIAL_LINK_OPTIONS.find((o) => o.key === detail.key)
+                            ?.urlPlaceholder || 'https://...'
+                        }
+                        aria-label={`${detail.label} URL`}
+                        className={inputClass}
+                      />
+                      {hasUrl && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateProfile({
+                              extraDetails: (resume.profile.extraDetails || []).map((d) =>
+                                d.id === detail.id ? { ...d, url: '' } : d
+                              ),
+                            })
+                          }
+                          title="Clear link URL"
+                          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Add Details Catalog */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Add details
+              </div>
+
+              {(() => {
+                const existingKeys = new Set(
+                  (resume.profile.extraDetails || []).map((d) => d.key)
+                );
+                const availablePersonal = PERSONAL_DETAIL_OPTIONS.filter(
+                  (o) => !existingKeys.has(o.key)
+                );
+                const visiblePersonal = showMoreDetails
+                  ? availablePersonal
+                  : availablePersonal.slice(0, 5);
+                const q = detailsSearch.trim().toLowerCase();
+                const availableSocial = SOCIAL_LINK_OPTIONS.filter(
+                  (o) =>
+                    !existingKeys.has(o.key) &&
+                    (!q || o.label.toLowerCase().includes(q))
+                );
+
+                const addExtraDetail = (
+                  key: string,
+                  label: string,
+                  category: 'personal' | 'link'
+                ) => {
+                  const id = `${key}-${Date.now()}`;
+                  updateProfile({
+                    extraDetails: [
+                      ...(resume.profile.extraDetails || []),
+                      { id, key, label, category, value: '', ...(category === 'link' ? { url: '' } : {}) },
+                    ],
+                  });
+                };
+
+                return (
+                  <>
+                    {availablePersonal.length > 0 && (
+                      <div className="space-y-1.5">
+                        {showMoreDetails && (
+                          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                            Personal details
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1.5">
+                          {visiblePersonal.map((opt) => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() =>
+                                addExtraDetail(opt.key, opt.label, 'personal')
+                              }
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 hover:text-teal-700 dark:hover:text-teal-300 transition"
+                            >
+                              <Plus className="w-3 h-3 opacity-70" />
+                              <span>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {showMoreDetails && (
+                      <div className="space-y-2 pt-1">
+                        <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                          Links / social profiles
+                        </div>
+                        <div className="relative flex items-center">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                          <input
+                            value={detailsSearch}
+                            onChange={(e) => setDetailsSearch(e.target.value)}
+                            placeholder="Search"
+                            className={`${inputClass} pl-8 bg-slate-50 dark:bg-slate-900`}
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+                          {availableSocial.map((opt) => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() =>
+                                addExtraDetail(opt.key, opt.label, 'link')
+                              }
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 hover:text-teal-700 dark:hover:text-teal-300 transition"
+                            >
+                              <Plus className="w-3 h-3 opacity-70" />
+                              <span>{opt.label}</span>
+                            </button>
+                          ))}
+                          {availableSocial.length === 0 && (
+                            <span className="text-[11px] text-slate-400">
+                              No matching platforms
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowMoreDetails((prev) => !prev)}
+                      className="inline-flex items-center px-3 py-1 rounded-md text-[11px] font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    >
+                      {showMoreDetails ? 'Show Less' : 'Show More'}
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         )}
       </div>

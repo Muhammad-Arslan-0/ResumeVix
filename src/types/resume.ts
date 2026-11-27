@@ -21,6 +21,15 @@ export interface LanguageItem {
   visible: boolean;
 }
 
+export interface ProfileExtraDetail {
+  id: string;
+  key: string;
+  label: string;
+  category: 'personal' | 'link';
+  value: string;
+  url?: string;
+}
+
 export interface ProfileData {
   fullName: string;
   headline: string;
@@ -35,6 +44,7 @@ export interface ProfileData {
   githubUrl?: string;
   orcid?: string;
   orcidUrl?: string;
+  extraDetails?: ProfileExtraDetail[];
 }
 
 export interface ExperienceItem {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Github, Globe, Linkedin, Mail, MapPin, Phone } from 'lucide-react';
+import { Github, Globe, Link2, Linkedin, Mail, MapPin, Phone, User } from 'lucide-react';
 import { ResumeData, SectionConfig, TemplateConfig } from '@/types';
 import { getTemplateMeta, TemplateDefinition } from './registry';
 import { PageShell, SectionRenderer } from './primitives';
@@ -62,6 +62,20 @@ function ContactLine({ data, centered = false }: { data: ResumeData; centered?: 
     profile.orcid
       ? { text: `ORCID: ${profile.orcid}`, href: resolveProfileHref('orcid', profile.orcid, profile.orcidUrl) }
       : null,
+    ...(profile.extraDetails || [])
+      .filter((d) => d.value.trim())
+      .map((d) => ({
+        text:
+          d.category === 'personal'
+            ? `${d.label}: ${d.value}`
+            : d.key === 'orcid' && !/^orcid:/i.test(d.value)
+              ? `ORCID: ${d.value}`
+              : d.value,
+        href:
+          d.category === 'link'
+            ? resolveProfileHref(d.key === 'orcid' ? 'orcid' : 'website', d.value, d.url)
+            : undefined,
+      })),
   ].filter(Boolean) as Array<{ text: string; href?: string }>;
 
   return (
@@ -170,6 +184,21 @@ function TemplateHeader({
             href: resolveProfileHref('orcid', profile.orcid, profile.orcidUrl),
           }
         : null,
+      ...(profile.extraDetails || [])
+        .filter((d) => d.value.trim())
+        .map((d) => ({
+          icon: d.category === 'link' ? Link2 : User,
+          text:
+            d.category === 'personal'
+              ? `${d.label}: ${d.value}`
+              : d.key === 'orcid' && !/^orcid:/i.test(d.value)
+                ? `ORCID: ${d.value}`
+                : d.value,
+          href:
+            d.category === 'link'
+              ? resolveProfileHref(d.key === 'orcid' ? 'orcid' : 'website', d.value, d.url)
+              : undefined,
+        })),
     ].filter(Boolean) as Array<{
       icon: React.ComponentType<{ className?: string }>;
       text: string;
