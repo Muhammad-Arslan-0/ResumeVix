@@ -219,7 +219,9 @@ export function parseResumeTextHeuristic(
       continue;
     }
     if (!buckets[currentSection]) buckets[currentSection] = [];
-    buckets[currentSection].push(currentSection === 'skills' ? line : cleanLine);
+    buckets[currentSection].push(
+      currentSection === 'skills' || currentSection === 'education' ? line : cleanLine
+    );
   }
 
   const headerLines = buckets.header || [];
@@ -301,46 +303,132 @@ export function parseResumeTextHeuristic(
     flushExp();
   }
 
-  // Parse Education entries
+  // Parse Education entries (supports single-column, 2-column tab-rail, and multiple degrees)
   const education: ResumeData['education'] = [];
   if (eduLines.length > 0) {
-    let startDate = '';
-    let endDate = '';
-    let location = '';
-    let degree = '';
-    let institution = '';
-    let gpa = '';
+    const DEGREE_RE =
+      /\b(B\.?S\.?|B\.?A\.?|B\.?Sc\.?|B\.?E\.?|B\.?Tech|M\.?S\.?|M\.?A\.?|M\.?Sc\.?|M\.?Tech|MBA|Ph\.?D\.?|Doctorate|Bachelor|Master|Associate|Diploma|Certificate|High\s+School|Intermediate|F\.?Sc|Matric)\b/i;
+    const INST_RE =
+      /\b(University|College|Institute|School|Academy|Polytechnic|Faculty|Campus)\b/i;
+    const INLINE_DATE_RE =
+      /(\d{4}(?:\/\d{2}|-\d{2})?|\d{2}\/\d{4})\s*[–-]\s*(\d{4}(?:\/\d{2}|-\d{2})?|\d{2}\/\d{4}|Present|Current)/i;
+    const GPA_RE =
+      /\b(?:C?GPA)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?(?:\s*\/\s*[0-9]+(?:\.[0-9]+)?)?)/i;
 
-    for (const line of eduLines) {
-      const dateMatch = line.match(DATE_RANGE_REGEX);
+    const flatEduTokens = eduLines
+      .flatMap((l) => l.split('\t'))
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    type DraftEdu = {
+      startDate: string;
+      endDate: string;
+      location: string;
+      degree: string;
+      institution: string;
+      gpa: string;
+      thesisTitle: string;
+      extraNotes: string[];
+    };
+
+    let currentEdu: DraftEdu | null = null;
+
+    const createDraftEdu = (): DraftEdu => ({
+      startDate: '',
+      endDate: '',
+      location: '',
+      degree: '',
+      institution: '',
+      gpa: '',
+      thesisTitle: '',
+      extraNotes: [],
+    });
+
+    const flushEdu = () => {
+      if (!currentEdu) return;
+      if (currentEdu.degree || currentEdu.institution) {
+        education.push({
+          id: uid('edu', education.length),
+          institution: currentEdu.institution,
+          degree: currentEdu.degree || currentEdu.institution,
+          location: currentEdu.location || undefined,
+          startDate: currentEdu.startDate,
+          endDate: currentEdu.endDate,
+          gpa: currentEdu.gpa || undefined,
+          thesisTitle: currentEdu.thesisTitle || undefined,
+          description:
+            currentEdu.extraNotes.length > 0
+              ? currentEdu.extraNotes.join('\n')
+              : undefined,
+          visible: true,
+        });
+      }
+      currentEdu = null;
+    };
+
+    for (const rawToken of flatEduTokens) {
+      let token = rawToken;
+      const dateMatch = token.match(INLINE_DATE_RE);
       if (dateMatch) {
-        startDate = dateMatch[1];
-        endDate = dateMatch[2];
-      } else if (/^GPA:/i.test(line)) {
-        gpa = line.replace(/^GPA:\s*/i, '').trim();
-      } else if (!degree && !/^[•\-*]/.test(line)) {
-        if (line.includes(',')) {
-          const [deg, ...inst] = line.split(',');
-          degree = deg.trim();
-          institution = inst.join(',').trim();
-        } else {
-          degree = line;
+        if (currentEdu && (currentEdu.degree || currentEdu.institution)) {
+          flushEdu();
         }
-      } else if (!location && line.length < 40) {
-        location = line;
+        if (!currentEdu) currentEdu = createDraftEdu();
+        currentEdu.startDate = dateMatch[1];
+        currentEdu.endDate = dateMatch[2];
+        token = token.replace(dateMatch[0], '').replace(/^[\s,|–-]+|[\s,|–-]+$/g, '').trim();
+        if (!token) continue;
+      }
+
+      if (!currentEdu) currentEdu = createDraftEdu();
+
+      if (GPA_RE.test(token)) {
+        const gm = token.match(GPA_RE);
+        if (gm) currentEdu.gpa = gm[1].replace(/\s+/g, '');
+        continue;
+      }
+
+      if (/^Thesis\s*[:\-]/i.test(token)) {
+        currentEdu.thesisTitle = token.replace(/^Thesis\s*[:\-]\s*/i, '').trim();
+        continue;
+      }
+
+      const hasDegree = DEGREE_RE.test(token);
+      const hasInst = INST_RE.test(token);
+
+      if (hasDegree || hasInst) {
+        if ((hasDegree && currentEdu.degree) || (hasInst && currentEdu.institution)) {
+          flushEdu();
+          currentEdu = createDraftEdu();
+        }
+        if (hasDegree && hasInst) {
+          const parts = token.split(/\s*[,|•–—]\s*|\s+at\s+/i).map((p) => p.trim()).filter(Boolean);
+          const degPart = parts.find((p) => DEGREE_RE.test(p)) || parts[0] || '';
+          const instPart = parts.find((p) => p !== degPart && INST_RE.test(p)) || parts.slice(1).join(', ');
+          currentEdu.degree = degPart;
+          currentEdu.institution = instPart;
+        } else if (hasDegree) {
+          currentEdu.degree = token;
+        } else {
+          currentEdu.institution = token;
+        }
+        continue;
+      }
+
+      if (!currentEdu.location && token.length <= 45 && /,/.test(token)) {
+        currentEdu.location = token;
+        continue;
+      }
+
+      if (!currentEdu.degree) {
+        currentEdu.degree = token;
+      } else if (!currentEdu.institution) {
+        currentEdu.institution = token;
+      } else {
+        currentEdu.extraNotes.push(token);
       }
     }
-
-    education.push({
-      id: uid('edu', 0),
-      institution: institution || location,
-      degree: degree || eduLines[0],
-      location: institution ? location : undefined,
-      startDate,
-      endDate,
-      gpa: gpa || undefined,
-      visible: true,
-    });
+    flushEdu();
   }
 
   // Parse Skills (supports multi-column tab grids, "Category: items", and stacked category/items)

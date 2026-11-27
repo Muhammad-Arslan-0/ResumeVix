@@ -52,7 +52,14 @@ Urdu — Native/Bilingual`;
     expect(parsed.profile.location).toBe('Lahore, Pakistan');
     expect(parsed.experience.length).toBe(2);
     expect(parsed.experience[0].bullets[0]).toContain('from scratch for Android and iOS.');
-    expect(parsed.education[0].gpa).toBe('3.50/4.0');
+    expect(parsed.education[0]).toMatchObject({
+      degree: 'BS Computer Science',
+      institution: 'University Of Sahiwal',
+      location: 'Sahiwal, Pakistan',
+      startDate: '2018',
+      endDate: '2022',
+      gpa: '3.50/4.0',
+    });
     expect(parsed.projects.length).toBe(3);
     expect(parsed.projects.map((p) => p.name)).toEqual([
       'LeafWise',
@@ -97,6 +104,33 @@ Trello`;
     expect(parsed.skills[8]).toMatchObject({
       category: 'Others',
       items: ['Kotlin', 'JavaScript', 'NodeJS', 'GitHub', 'Trello'],
+    });
+  });
+
+  it('extracts degree, university, location, dates, and GPA from two-column education layouts', () => {
+    const textWithTwoColEdu = `Muhammad Arslan
+EDUCATION
+2018 – 2022\tBS Computer Science, University Of Sahiwal
+Sahiwal, Pakistan\tGPA: 3.50/4.0
+2023 – 2025\tMS Data Science
+Nusa Putra University\tCGPA: 3.90/4.00`;
+
+    const parsed = parseResumeTextHeuristic(textWithTwoColEdu);
+    expect(parsed.education).toHaveLength(2);
+    expect(parsed.education[0]).toMatchObject({
+      degree: 'BS Computer Science',
+      institution: 'University Of Sahiwal',
+      location: 'Sahiwal, Pakistan',
+      startDate: '2018',
+      endDate: '2022',
+      gpa: '3.50/4.0',
+    });
+    expect(parsed.education[1]).toMatchObject({
+      degree: 'MS Data Science',
+      institution: 'Nusa Putra University',
+      startDate: '2023',
+      endDate: '2025',
+      gpa: '3.90/4.00',
     });
   });
 });
