@@ -175,7 +175,9 @@ export default function ResumeVixWorkspace() {
         {/* Right Live Preview Canvas */}
         <main
           className={`flex-1 flex overflow-hidden print-container print:block print:h-auto print:overflow-visible ${
-            mobileView === 'preview' ? 'flex' : 'hidden lg:flex'
+            mobileView === 'preview'
+              ? 'flex'
+              : 'fixed -left-[9999px] top-0 w-full h-full pointer-events-none opacity-0 lg:static lg:w-auto lg:h-auto lg:pointer-events-auto lg:opacity-100 lg:flex'
           }`}
         >
           <PreviewCanvas />

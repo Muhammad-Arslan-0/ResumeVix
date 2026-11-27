@@ -10,6 +10,7 @@ import {
   FileUp,
   FolderKanban,
   KeyRound,
+  Loader2,
   LogIn,
   LogOut,
   Moon,
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useResumeStore } from '@/store/useResumeStore';
 import { exportResumeToJson, parseImportedJson } from '@/lib/export/json';
-import { triggerPrintPdf } from '@/lib/export/pdf';
+import { downloadResumePdf } from '@/lib/export/pdf';
 import { getProviderMeta } from '@/lib/ai/providers';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { SyncStatusBadge } from './SyncStatusBadge';
@@ -58,6 +59,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     if (!exportMenuOpen) return;
@@ -284,13 +286,18 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         <div ref={exportMenuRef} className="relative">
           <button
             type="button"
+            disabled={isExportingPdf}
             onClick={() => setExportMenuOpen((prev) => !prev)}
             aria-haspopup="menu"
             aria-expanded={exportMenuOpen}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-70 text-white shadow-sm transition"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export</span>
+            {isExportingPdf ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span>{isExportingPdf ? 'Exporting...' : 'Export'}</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-90" />
           </button>
 
@@ -303,14 +310,22 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => {
+                onClick={async () => {
                   setExportMenuOpen(false);
-                  requestAnimationFrame(() => {
-                    triggerPrintPdf(
+                  setIsExportingPdf(true);
+                  setImportError(null);
+                  try {
+                    await downloadResumePdf(
                       template.pageSize,
                       `${resume.profile.fullName || 'ResumeVix'}_CV`
                     );
-                  });
+                  } catch (err) {
+                    setImportError(
+                      err instanceof Error ? err.message : 'Failed to export PDF'
+                    );
+                  } finally {
+                    setIsExportingPdf(false);
+                  }
                 }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               >
@@ -318,7 +333,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                 <div>
                   <div className="font-medium">Save as PDF</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                    Vector PDF ({template.pageSize === 'A4' ? 'A4' : 'US Letter'})
+                    Direct PDF ({template.pageSize === 'A4' ? 'A4' : 'US Letter'})
                   </div>
                 </div>
               </button>

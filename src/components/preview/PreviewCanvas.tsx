@@ -220,6 +220,7 @@ export const PreviewCanvas: React.FC = () => {
           return (
             <div key={pageIdx} className="flex flex-col items-center">
               <div
+                data-rv-pdf-page="true"
                 className="bg-white shadow-xl rounded-[2px] box-border overflow-hidden relative"
                 style={{
                   width: widthMm,
