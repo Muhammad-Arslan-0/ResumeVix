@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -46,6 +46,73 @@ import { SectionConfig } from '@/types';
 
 const inputClass =
   'w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500';
+
+/**
+ * Controlled comma-separated list input that preserves raw cursor/whitespace
+ * while typing or backspacing, only normalizing on blur/external updates.
+ */
+const CommaListField: React.FC<{
+  values: string[];
+  onCommit: (next: string[]) => void;
+  placeholder?: string;
+  className?: string;
+  multiline?: boolean;
+  rows?: number;
+}> = ({ values, onCommit, placeholder, className = inputClass, multiline, rows = 2 }) => {
+  const joined = values.join(', ');
+  const [draft, setDraft] = useState(joined);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(joined);
+    }
+  }, [joined, focused]);
+
+  const handleChange = (raw: string) => {
+    setDraft(raw);
+    const parsed = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    onCommit(parsed);
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+    const parsed = draft
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setDraft(parsed.join(', '));
+    onCommit(parsed);
+  };
+
+  if (multiline) {
+    return (
+      <textarea
+        rows={rows}
+        value={draft}
+        onFocus={() => setFocused(true)}
+        onBlur={handleBlur}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder={placeholder}
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <input
+      value={draft}
+      onFocus={() => setFocused(true)}
+      onBlur={handleBlur}
+      onChange={(e) => handleChange(e.target.value)}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+};
 
 const PERSONAL_DETAIL_OPTIONS: Array<{ key: string; label: string; placeholder: string }> = [
   { key: 'nationality', label: 'Nationality', placeholder: 'e.g. Pakistani' },
@@ -744,15 +811,10 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <input
-                  value={pub.authors.join(', ')}
-                  onChange={(e) =>
-                    updatePublication(pub.id, {
-                      authors: e.target.value.split(',').map((a) => a.trim()),
-                    })
-                  }
+                <CommaListField
+                  values={pub.authors}
+                  onCommit={(authors) => updatePublication(pub.id, { authors })}
                   placeholder="Authors (comma-separated)"
-                  className={inputClass}
                 />
                 <div className="grid grid-cols-3 gap-2">
                   <input
@@ -862,17 +924,12 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
                               </div>
                             )}
                           </div>
-                          <input
-                            value={proj.technologies.join(', ')}
-                            onChange={(e) =>
-                              updateProject(proj.id, {
-                                technologies: e.target.value
-                                  .split(',')
-                                  .map((t) => t.trim()),
-                              })
+                          <CommaListField
+                            values={proj.technologies}
+                            onCommit={(technologies) =>
+                              updateProject(proj.id, { technologies })
                             }
                             placeholder="Technologies (comma-separated)"
-                            className={inputClass}
                           />
                           <div className="flex justify-end">
                             <button
@@ -1005,18 +1062,14 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
                                 <label className="block text-[11px] font-medium mb-1">
                                   Information / Sub-skills
                                 </label>
-                                <textarea
+                                <CommaListField
+                                  multiline
                                   rows={2}
-                                  value={grp.items.join(', ')}
-                                  onChange={(e) =>
-                                    updateSkillGroup(grp.id, {
-                                      items: e.target.value
-                                        .split(',')
-                                        .map((s) => s.trim()),
-                                    })
+                                  values={grp.items}
+                                  onCommit={(items) =>
+                                    updateSkillGroup(grp.id, { items })
                                   }
                                   placeholder="e.g. Material, Cupertino"
-                                  className={inputClass}
                                 />
                               </div>
 
