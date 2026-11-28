@@ -56,10 +56,28 @@ export async function POST(req: NextRequest) {
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 1 });
+    await page.emulateMediaType('screen');
 
-    await page.setContent(html, { waitUntil: 'load', timeout: 8000 });
+    await page.setContent(html, { waitUntil: 'load', timeout: 12000 });
 
     await page.evaluate(async () => {
+      // Wait up to 3s for any external font stylesheets (e.g. Google Fonts)
+      const links = Array.from(
+        document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')
+      );
+      await Promise.race([
+        Promise.all(
+          links.map(
+            (link) =>
+              new Promise<void>((resolve) => {
+                if (link.sheet) return resolve();
+                link.addEventListener('load', () => resolve(), { once: true });
+                link.addEventListener('error', () => resolve(), { once: true });
+              })
+          )
+        ),
+        new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+      ]);
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
