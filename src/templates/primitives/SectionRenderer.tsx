@@ -564,15 +564,33 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                 <article key={proj.id} className="rv-entry break-inside-avoid">
                   <div className="flex justify-between items-baseline gap-2">
                     <div className="font-semibold inline-flex items-center gap-1.5">
-                      <span>{variant === 'editorial-banner' ? `• ${proj.name}` : proj.name}</span>
-                      {proj.url &&
-                        (variant === 'editorial-banner' ? (
-                          <ExternalLink className="w-3 h-3 text-[var(--rv-muted)] inline" />
-                        ) : (
-                          <span className="font-normal text-[0.88em] text-[var(--rv-muted)]">
-                            ({proj.url})
+                      {proj.url ? (
+                        <a
+                          href={
+                            /^https?:\/\//i.test(proj.url)
+                              ? proj.url
+                              : `https://${proj.url}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 hover:underline"
+                        >
+                          <span>
+                            {variant === 'editorial-banner' ? `• ${proj.name}` : proj.name}
                           </span>
-                        ))}
+                          {variant === 'editorial-banner' ? (
+                            <ExternalLink className="w-3 h-3 text-[var(--rv-muted)] inline" />
+                          ) : (
+                            <span className="font-normal text-[0.88em] text-[var(--rv-muted)]">
+                              ({proj.url})
+                            </span>
+                          )}
+                        </a>
+                      ) : (
+                        <span>
+                          {variant === 'editorial-banner' ? `• ${proj.name}` : proj.name}
+                        </span>
+                      )}
                     </div>
                     {(proj.startDate || proj.endDate) && (
                       <span className="text-[0.88em] text-[var(--rv-muted)] whitespace-nowrap">
