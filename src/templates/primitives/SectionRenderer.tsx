@@ -804,9 +804,10 @@ export const SectionRenderer: React.FC<SectionRendererProps> = React.memo(
                             }
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:underline"
+                            className="inline-flex items-center gap-1.5 hover:underline"
                           >
-                            {entry.title}
+                            <span>{entry.title}</span>
+                            <ExternalLink className="w-3 h-3 text-[var(--rv-muted)] inline shrink-0" />
                           </a>
                         ) : (
                           entry.title
