@@ -784,107 +784,135 @@ export const ContentEditor: React.FC<{ onOpenSettings: () => void }> = ({
       case 'projects':
         return (
           <div className="space-y-2.5">
-            {resume.projects.map((proj) => {
-              const isLinkOpen = openProjectLinkId === proj.id;
-              const hasUrl = Boolean(proj.url?.trim());
-              return (
-                <div
-                  key={proj.id}
-                  className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-2"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative flex-1 flex items-center">
-                        <input
-                          value={proj.name}
-                          onChange={(e) => updateProject(proj.id, { name: e.target.value })}
-                          placeholder="Project Name"
-                          className={`${inputClass} font-medium pr-16`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setOpenProjectLinkId(isLinkOpen ? null : proj.id)}
-                          title={hasUrl ? `Linked: ${proj.url}` : 'Add project URL'}
-                          className={`absolute right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${
-                            isLinkOpen || hasUrl
-                              ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'
-                              : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600'
-                          }`}
-                        >
-                          <Link2 className="w-3 h-3" />
-                          <span>Link</span>
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeProject(proj.id)}
-                        aria-label="Remove project"
-                        className="p-1 text-slate-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    {isLinkOpen && (
-                      <div className="flex items-center gap-1.5 pl-2 border-l-2 border-teal-500/60">
-                        <input
-                          type="url"
-                          value={proj.url || ''}
-                          onChange={(e) => updateProject(proj.id, { url: e.target.value })}
-                          placeholder="https://github.com/... or https://demo.app"
-                          aria-label="Project URL"
-                          className={inputClass}
-                        />
-                        {hasUrl && (
-                          <button
-                            type="button"
-                            onClick={() => updateProject(proj.id, { url: '' })}
-                            title="Clear project URL"
-                            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    value={proj.technologies.join(', ')}
-                    onChange={(e) =>
-                      updateProject(proj.id, {
-                        technologies: e.target.value.split(',').map((t) => t.trim()),
-                      })
-                    }
-                    placeholder="Technologies (comma-separated)"
-                    className={inputClass}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleRewriteBullets('projects', proj.id, proj.name, proj.bullets)
-                      }
-                      disabled={aiBusyId === proj.id}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-teal-700 dark:text-teal-300 hover:underline"
-                    >
-                      {aiBusyId === proj.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-3 h-3" />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleItemDragEnd('projects')}
+            >
+              <SortableContext
+                items={resume.projects.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {resume.projects.map((proj) => {
+                  const isLinkOpen = openProjectLinkId === proj.id;
+                  const hasUrl = Boolean(proj.url?.trim());
+                  return (
+                    <SortableWrapper key={proj.id} id={proj.id}>
+                      {(handleProps) => (
+                        <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-2">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <DragHandle {...handleProps} />
+                              <div className="relative flex-1 flex items-center">
+                                <input
+                                  value={proj.name}
+                                  onChange={(e) =>
+                                    updateProject(proj.id, { name: e.target.value })
+                                  }
+                                  placeholder="Project Name"
+                                  className={`${inputClass} font-medium pr-16`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenProjectLinkId(isLinkOpen ? null : proj.id)
+                                  }
+                                  title={hasUrl ? `Linked: ${proj.url}` : 'Add project URL'}
+                                  className={`absolute right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${
+                                    isLinkOpen || hasUrl
+                                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'
+                                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600'
+                                  }`}
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                  <span>Link</span>
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeProject(proj.id)}
+                                aria-label="Remove project"
+                                className="p-1 text-slate-400 hover:text-red-500"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {isLinkOpen && (
+                              <div className="flex items-center gap-1.5 pl-2 border-l-2 border-teal-500/60">
+                                <input
+                                  type="url"
+                                  value={proj.url || ''}
+                                  onChange={(e) =>
+                                    updateProject(proj.id, { url: e.target.value })
+                                  }
+                                  placeholder="https://github.com/... or https://demo.app"
+                                  aria-label="Project URL"
+                                  className={inputClass}
+                                />
+                                {hasUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateProject(proj.id, { url: '' })}
+                                    title="Clear project URL"
+                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            value={proj.technologies.join(', ')}
+                            onChange={(e) =>
+                              updateProject(proj.id, {
+                                technologies: e.target.value
+                                  .split(',')
+                                  .map((t) => t.trim()),
+                              })
+                            }
+                            placeholder="Technologies (comma-separated)"
+                            className={inputClass}
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRewriteBullets(
+                                  'projects',
+                                  proj.id,
+                                  proj.name,
+                                  proj.bullets
+                                )
+                              }
+                              disabled={aiBusyId === proj.id}
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-teal-700 dark:text-teal-300 hover:underline"
+                            >
+                              {aiBusyId === proj.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-3 h-3" />
+                              )}
+                              <span>AI Rewrite</span>
+                            </button>
+                          </div>
+                          <textarea
+                            rows={2}
+                            value={proj.bullets.join('\n')}
+                            onChange={(e) =>
+                              updateProject(proj.id, {
+                                bullets: e.target.value.split('\n'),
+                              })
+                            }
+                            className={inputClass}
+                          />
+                        </div>
                       )}
-                      <span>AI Rewrite</span>
-                    </button>
-                  </div>
-                  <textarea
-                    rows={2}
-                    value={proj.bullets.join('\n')}
-                    onChange={(e) =>
-                      updateProject(proj.id, { bullets: e.target.value.split('\n') })
-                    }
-                    className={inputClass}
-                  />
-                </div>
-              );
-            })}
+                    </SortableWrapper>
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
             <button
               type="button"
               onClick={addProject}
